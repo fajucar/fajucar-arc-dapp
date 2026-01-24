@@ -10,23 +10,38 @@ if (import.meta.env.DEV) {
 }
 
 // Helper function to get address with correct checksum
-function getChecksumAddress(address: string): string {
-  if (!address || address === '') return '';
+// NEVER throws - always returns empty string if invalid
+function getChecksumAddress(address: string | undefined): string {
+  if (!address || typeof address !== 'string' || address.trim() === '') {
+    return '';
+  }
   try {
     // Convert to lowercase first, then getAddress will apply proper checksum
-    const normalized = address.toLowerCase();
+    const normalized = address.trim().toLowerCase();
+    // Validate it looks like an address before calling getAddress
+    if (!/^0x[a-f0-9]{40}$/i.test(normalized)) {
+      if (import.meta.env.DEV) {
+        console.warn(`Invalid address format (not 40 hex chars): ${address}`);
+      }
+      return '';
+    }
     return getAddress(normalized); // This converts to EIP-55 checksum format
   } catch (error) {
-    console.error(`Invalid address format: ${address}`, error);
-    // Try to fix common issues
-    try {
-      // Remove any whitespace and try again
-      const cleaned = address.trim();
-      return getAddress(cleaned.toLowerCase());
-    } catch (e) {
-      console.error(`Could not fix address: ${address}`, e);
-      return address; // Return as-is if invalid (will be caught by validation later)
+    if (import.meta.env.DEV) {
+      console.warn(`Invalid address format: ${address}`, error);
     }
+    // Return empty string instead of throwing
+    return '';
+  }
+}
+
+// Safe access to env vars - never throws
+function getEnvVar(key: string): string {
+  try {
+    const value = import.meta.env[key];
+    return typeof value === 'string' ? value : '';
+  } catch {
+    return '';
   }
 }
 
@@ -34,9 +49,10 @@ export const CONTRACT_ADDRESSES = {
   // Update these with your deployed contract addresses
   // Using getAddress() to ensure proper EIP-55 checksum format
   // Note: MOCK_USDC is no longer used in v2 (image NFT minter)
-  MOCK_USDC: getChecksumAddress(import.meta.env.VITE_MOCK_USDC_ADDRESS || ''),
-  GIFT_CARD_NFT: getChecksumAddress(import.meta.env.VITE_GIFT_CARD_NFT_ADDRESS || ''),
-  GIFT_CARD_MINTER: getChecksumAddress(import.meta.env.VITE_GIFT_CARD_MINTER_ADDRESS || ''),
+  // NEVER throws - returns empty string if env var is missing or invalid
+  MOCK_USDC: getChecksumAddress(getEnvVar('VITE_MOCK_USDC_ADDRESS')),
+  GIFT_CARD_NFT: getChecksumAddress(getEnvVar('VITE_GIFT_CARD_NFT_ADDRESS')),
+  GIFT_CARD_MINTER: getChecksumAddress(getEnvVar('VITE_GIFT_CARD_MINTER_ADDRESS')),
 };
 
 // Debug: Log parsed addresses

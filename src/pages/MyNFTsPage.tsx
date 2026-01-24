@@ -7,6 +7,8 @@ import toast from 'react-hot-toast'
 import { useWalletModal } from '@/contexts/WalletModalContext'
 import { NFT_ADDRESS, validateConfig } from '@/lib/addresses'
 import FajuARC_ABI from '@/abis/FajuARC.json'
+import { AppShell } from '@/components/Layout/AppShell'
+import { motion } from 'framer-motion'
 
 // Timeout for RPC operations (15 seconds per operation)
 const RPC_TIMEOUT_MS = 15000
@@ -82,7 +84,20 @@ interface NFTInfo {
 }
 
 // ArcScan base URL (fallback to testnet)
-const ARCSCAN_BASE_URL = import.meta.env.VITE_ARCSCAN_BASE_URL || 'https://testnet.arcscan.app'
+// Safe access - never throws
+function getArcscanBaseUrl(): string {
+  try {
+    const url = import.meta.env.VITE_ARCSCAN_BASE_URL
+    if (url && typeof url === 'string' && url.trim() !== '') {
+      return url.trim()
+    }
+  } catch {
+    // Ignore - use fallback
+  }
+  return 'https://testnet.arcscan.app'
+}
+
+const ARCSCAN_BASE_URL = getArcscanBaseUrl()
 
 /**
  * Get fallback image path based on tokenId
@@ -609,59 +624,57 @@ export function MyNFTsPage() {
   // Allow viewing NFTs if ownerParam is provided (even if wallet not connected)
   if (!isConnected && !ownerParam) {
     return (
-      <div className="max-w-xl mx-auto p-4">
-        <h1 className="text-xl font-semibold mb-2">My NFTs</h1>
-        <p className="opacity-80 mb-4">
-          Connect your wallet to view your NFTs.
-        </p>
-
-        <div className="flex gap-2">
+      <AppShell
+        title="My NFTs"
+        subtitle="Connect your wallet to view your NFTs"
+      >
+        <div className="text-center py-12">
+          <ImageIcon className="h-16 w-16 mx-auto text-cyan-400 mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-white">Connect Your Wallet</h2>
+          <p className="text-slate-400 mb-6">Connect your wallet to view your NFTs</p>
           <button
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all"
             onClick={() => openModal?.()}
           >
             Connect Wallet
           </button>
-
-          <a 
-            className="px-4 py-2 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors" 
-            href="/"
-          >
-            Go to Home
-          </a>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
   if (!nftContractAddress) {
     return (
-      <div className="max-w-6xl mx-auto py-12 px-4">
-        <div className="bg-amber-900/20 border border-amber-500/30 rounded-2xl p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4 text-amber-400">Contract not configured</h2>
-          <p className="text-slate-400 mb-2">
-            Configure VITE_GIFT_CARD_NFT_ADDRESS in the .env file
-          </p>
+      <AppShell
+        title="My NFTs"
+        subtitle="Contract not configured"
+      >
+        <div className="text-center py-12">
+          <div className="bg-amber-900/20 border border-amber-500/30 rounded-2xl p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4 text-amber-400">Contract not configured</h2>
+            <p className="text-slate-400 mb-2">
+              Configure VITE_GIFT_CARD_NFT_ADDRESS in the .env file
+            </p>
+          </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
+  const subtitle = ownerAddress 
+    ? `Owner: ${ownerAddress.slice(0, 6)}...${ownerAddress.slice(-4)}`
+    : 'View and manage your Arc Network NFTs'
+
   return (
-    <div className="max-w-6xl mx-auto py-12 px-4">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">My NFTs</h1>
-          {ownerAddress && (
-            <p className="text-slate-400 text-sm">
-              Owner: {ownerAddress.slice(0, 6)}...{ownerAddress.slice(-4)}
-            </p>
-          )}
-        </div>
+    <AppShell
+      title="My NFTs"
+      subtitle={subtitle}
+    >
+      <div className="flex items-center justify-between mb-6">
         <div className="flex gap-2">
           <button
             onClick={() => setShowImportInstructions(!showImportInstructions)}
-            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white hover:bg-slate-700 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white hover:bg-slate-800/70 hover:border-cyan-500/30 transition-all flex items-center gap-2 text-sm font-medium"
           >
             <Info className="w-4 h-4" />
             Import Guide
@@ -672,7 +685,7 @@ export function MyNFTsPage() {
               loadNFTsRef.current()
             }}
             disabled={loading}
-            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white hover:bg-slate-800/70 hover:border-cyan-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -681,20 +694,20 @@ export function MyNFTsPage() {
       </div>
 
       {showImportInstructions && (
-        <div className="mb-6 bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <div className="mb-6 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <ImageIcon className="w-5 h-5" />
             How to import NFT to MetaMask
           </h3>
           <ol className="space-y-2 text-sm text-slate-300">
             <li>1. Open MetaMask</li>
             <li>2. Go to NFTs → Import NFT</li>
-            <li>3. Paste the contract address: <code className="bg-slate-800 px-2 py-1 rounded">{nftContractAddress}</code></li>
+            <li>3. Paste the contract address: <code className="bg-slate-800/50 px-2 py-1 rounded-lg">{nftContractAddress}</code></li>
             <li>4. Paste the Token ID of the NFT you want to import</li>
           </ol>
           <button
             onClick={() => copyToClipboard(nftContractAddress, 'Contract')}
-            className="mt-4 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-white text-sm font-medium flex items-center gap-2"
+            className="mt-4 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition-all"
           >
             {copied === 'Contract' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             Copy Contract Address
@@ -703,7 +716,7 @@ export function MyNFTsPage() {
       )}
 
       {error && (
-        <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+        <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-2xl p-4">
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}
@@ -715,7 +728,7 @@ export function MyNFTsPage() {
         </div>
       ) : error ? (
         // IMPORTANT: If error/timeout, show error and DON'T show "You don't have any NFTs yet" and DON'T suggest mint
-        <div className="bg-slate-900/50 border border-red-500/20 rounded-2xl p-12 text-center">
+        <div className="bg-slate-800/50 border border-red-500/20 rounded-2xl p-12 text-center">
           <p className="text-red-400 mb-4 font-medium">
             {error}
           </p>
@@ -725,7 +738,7 @@ export function MyNFTsPage() {
         </div>
       ) : nfts.length === 0 ? (
         // Only show "You don't have any NFTs yet" if NO error and NO highlight
-        <div className="bg-slate-900/50 border border-cyan-500/20 rounded-2xl p-12 text-center">
+        <div className="bg-slate-800/50 border border-cyan-500/20 rounded-2xl p-12 text-center">
           {highlightParam ? (
             <p className="text-slate-400 mb-4">
               NFT not found or still loading...
@@ -739,7 +752,7 @@ export function MyNFTsPage() {
               {!loading && (
                 <a
                   href="/mint"
-                  className="inline-block px-6 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-white font-medium transition-colors"
+                  className="inline-block px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-xl text-white font-medium transition-all shadow-lg shadow-cyan-500/25"
                 >
                   Mint an NFT
                 </a>
@@ -748,22 +761,28 @@ export function MyNFTsPage() {
           )}
         </div>
       ) : (
-        // Hide Mint CTA when NFTs exist
+        // Hide Mint CTA when NFTs exist - Grid igual ao MintPage
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {nfts.map((nft) => (
-            <NFTCard
+          {nfts.map((nft, index) => (
+            <motion.div
               key={nft.tokenId}
-              nft={nft}
-              contractAddress={nftContractAddress!}
-              copied={copied}
-              onCopy={copyToClipboard}
-              isHighlighted={highlightParam === nft.tokenId}
-              ref={highlightParam === nft.tokenId ? highlightedTokenIdRef : undefined}
-            />
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <NFTCard
+                nft={nft}
+                contractAddress={nftContractAddress!}
+                copied={copied}
+                onCopy={copyToClipboard}
+                isHighlighted={highlightParam === nft.tokenId}
+                ref={highlightParam === nft.tokenId ? highlightedTokenIdRef : undefined}
+              />
+            </motion.div>
           ))}
         </div>
       )}
-    </div>
+    </AppShell>
   )
 }
 
@@ -860,97 +879,103 @@ const NFTCard = React.forwardRef<HTMLDivElement, {
   return (
     <div
       ref={ref}
-      className={`bg-slate-900/50 border rounded-2xl p-6 transition-all ${
+      className={`rounded-2xl border bg-slate-900/50 backdrop-blur-xl overflow-hidden transition-all ${
         isHighlighted
-          ? 'border-cyan-500 shadow-lg shadow-cyan-500/20 scale-105'
-          : 'border-slate-700 hover:border-slate-600'
+          ? 'border-cyan-500 shadow-lg shadow-cyan-500/30 scale-105'
+          : 'border-cyan-500/25 hover:border-cyan-500/50'
       }`}
     >
-      {(metadata?.image && !useFallback && !imageLoadError && !nft.useFallbackImage) ? (
-        <img
-          src={ipfsToHttp(metadata.image)}
-          alt={metadata.name || `NFT #${nft.tokenId}`}
-          className="w-full h-64 object-cover rounded-lg mb-4"
-          onError={() => {
-            console.warn(`[NFTCard] Image load error for tokenId=${nft.tokenId}, image=${metadata.image}`)
-            console.log(`[NFTCard] tokenId=${nft.tokenId}: Switching to fallback image`)
-            setImageLoadError(true)
-            setUseFallback(true)
-          }}
-        />
-      ) : useFallback || imageLoadError ? (
-        <img
-          src={getFallbackImage(nft.tokenId)}
-          alt={`NFT #${nft.tokenId} (fallback)`}
-          className="w-full h-64 object-cover rounded-lg mb-4"
-          onError={() => {
-            console.error(`[NFTCard] Fallback image failed to load for tokenId=${nft.tokenId}`)
-          }}
-        />
-      ) : (
-        <div className="w-full h-64 bg-slate-800 rounded-lg mb-4 flex flex-col items-center justify-center">
-          {isLoadingMetadata ? (
-            <>
-              <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mb-2" />
-              <p className="text-xs text-slate-500">Loading metadata...</p>
-            </>
-          ) : metadataError ? (
-            <>
-              <ImageIcon className="w-12 h-12 text-slate-600 mb-2" />
-              <p className="text-xs text-slate-500 text-center px-2">Metadata unavailable</p>
-            </>
-          ) : (
-            <>
-              <ImageIcon className="w-12 h-12 text-slate-600 mb-2" />
-              <p className="text-xs text-slate-500">No image</p>
-            </>
-          )}
-        </div>
-      )}
-      
-      <h3 className="text-xl font-semibold mb-2">
-        {metadata?.name || `NFT #${nft.tokenId}`}
-      </h3>
-      
-      {metadata?.description && (
-        <p className="text-slate-400 text-sm mb-4 line-clamp-2">
-          {metadata.description}
-        </p>
-      )}
-      
-      {metadataError && !metadata && (
-        <p className="text-slate-500 text-xs mb-2 italic">
-          Metadata unavailable for token #{nft.tokenId}
-        </p>
-      )}
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">Token ID:</span>
-          <div className="flex items-center gap-2">
-            <span className="font-mono">{nft.tokenId}</span>
-            <button
-              onClick={() => onCopy(nft.tokenId, 'Token ID')}
-              className="p-1 hover:bg-slate-800 rounded transition-colors"
-            >
-              {copied === 'Token ID' ? (
-                <CheckCircle2 className="w-4 h-4 text-green-400" />
-              ) : (
-                <Copy className="w-4 h-4 text-slate-400" />
-              )}
-            </button>
+      {/* NFT Image - igual ao MintPage */}
+      <div className="relative aspect-square bg-gradient-to-br from-cyan-500/20 to-blue-500/20">
+        {(metadata?.image && !useFallback && !imageLoadError && !nft.useFallbackImage) ? (
+          <img
+            src={ipfsToHttp(metadata.image)}
+            alt={metadata.name || `NFT #${nft.tokenId}`}
+            className="w-full h-full object-cover"
+            onError={() => {
+              console.warn(`[NFTCard] Image load error for tokenId=${nft.tokenId}, image=${metadata.image}`)
+              console.log(`[NFTCard] tokenId=${nft.tokenId}: Switching to fallback image`)
+              setImageLoadError(true)
+              setUseFallback(true)
+            }}
+          />
+        ) : useFallback || imageLoadError ? (
+          <img
+            src={getFallbackImage(nft.tokenId)}
+            alt={`NFT #${nft.tokenId} (fallback)`}
+            className="w-full h-full object-cover"
+            onError={() => {
+              console.error(`[NFTCard] Fallback image failed to load for tokenId=${nft.tokenId}`)
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-slate-800 flex flex-col items-center justify-center">
+            {isLoadingMetadata ? (
+              <>
+                <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mb-2" />
+                <p className="text-xs text-slate-500">Loading metadata...</p>
+              </>
+            ) : metadataError ? (
+              <>
+                <ImageIcon className="w-12 h-12 text-slate-600 mb-2" />
+                <p className="text-xs text-slate-500 text-center px-2">Metadata unavailable</p>
+              </>
+            ) : (
+              <>
+                <ImageIcon className="w-12 h-12 text-slate-600 mb-2" />
+                <p className="text-xs text-slate-500">No image</p>
+              </>
+            )}
           </div>
-        </div>
+        )}
+      </div>
 
-        <a
-          href={`${ARCSCAN_BASE_URL}/token/${contractAddress}?a=${nft.tokenId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm transition-colors"
-        >
-          <ExternalLink className="w-4 h-4" />
-          View on ArcScan
-        </a>
+      {/* NFT Info - igual ao MintPage */}
+      <div className="p-6">
+        <h3 className="text-xl font-bold mb-2 text-white">
+          {metadata?.name || `NFT #${nft.tokenId}`}
+        </h3>
+        
+        {metadata?.description && (
+          <p className="text-slate-400 text-sm mb-4 line-clamp-2">
+            {metadata.description}
+          </p>
+        )}
+        
+        {metadataError && !metadata && (
+          <p className="text-slate-500 text-xs mb-4 italic">
+            Metadata unavailable for token #{nft.tokenId}
+          </p>
+        )}
+
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400">Token ID:</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-slate-300">#{nft.tokenId}</span>
+              <button
+                onClick={() => onCopy(nft.tokenId, 'Token ID')}
+                className="p-1 hover:bg-slate-800 rounded transition-colors"
+              >
+                {copied === 'Token ID' ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                ) : (
+                  <Copy className="w-4 h-4 text-slate-400" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <a
+            href={`${ARCSCAN_BASE_URL}/token/${contractAddress}?a=${nft.tokenId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+          >
+            <span>View on ArcScan</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
       </div>
     </div>
   )

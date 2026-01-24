@@ -1,17 +1,9 @@
 import { useState } from 'react'
-import { Menu, X, ExternalLink, Image } from 'lucide-react'
+import { Menu, X, Image, Sparkles, ArrowLeftRight, Waves } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@/components/Web3/ConnectButton'
-import { CONSTANTS } from '@/config/constants'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const navLinks = [
-  { label: 'Documentation', href: CONSTANTS.LINKS.docs },
-  { label: 'Explorer', href: CONSTANTS.LINKS.explorer },
-  { label: 'Faucet', href: CONSTANTS.LINKS.faucet },
-  { label: 'GitHub', href: CONSTANTS.LINKS.github },
-]
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -29,28 +21,45 @@ export function Header() {
         </div>
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-3">
+          {/* Mint NFTs Button */}
+          <Link
+            to="/mint"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all text-sm shadow-lg shadow-cyan-500/25"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Mint NFTs</span>
+          </Link>
+
+          {/* Swap Button */}
+          <Link
+            to="/swap"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all text-sm"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            <span>Swap</span>
+          </Link>
+
+          {/* Pools Button */}
+          <Link
+            to="/pools"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all text-sm"
+          >
+            <Waves className="h-4 w-4" />
+            <span>Pools</span>
+          </Link>
+
+
+          {/* My NFTs Link (only when connected) */}
           {isConnected && (
             <Link
               to="/my-nfts"
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-1"
+              className="flex items-center gap-1 px-4 py-2 rounded-xl border border-slate-700/50 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-800/70 hover:border-cyan-500/30 transition-all text-sm font-medium"
             >
               <Image className="h-4 w-4" />
-              My NFTs
+              <span>My NFTs</span>
             </Link>
           )}
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-1"
-            >
-              {link.label}
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          ))}
         </div>
 
         {/* Connect Button */}
@@ -81,6 +90,42 @@ export function Header() {
             className="border-t border-slate-800 bg-slate-950 md:hidden"
           >
             <div className="px-4 py-4 space-y-4">
+              {/* Primary Actions */}
+              <div className="space-y-2">
+                <Link
+                  to="/mint"
+                  className="block w-full text-center px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Mint NFTs</span>
+                  </div>
+                </Link>
+                <Link
+                  to="/swap"
+                  className="block w-full text-center px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <ArrowLeftRight className="h-4 w-4" />
+                    <span>Swap</span>
+                  </div>
+                </Link>
+                <Link
+                  to="/pools"
+                  className="block w-full text-center px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Waves className="h-4 w-4" />
+                    <span>Pools</span>
+                  </div>
+                </Link>
+              </div>
+
+
+              {/* My NFTs (only when connected) */}
               {isConnected && (
                 <Link
                   to="/my-nfts"
@@ -88,22 +133,12 @@ export function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Image className="h-4 w-4" />
-                  My NFTs
+                  <span>My NFTs</span>
                 </Link>
               )}
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block py-2 text-slate-300 hover:text-white transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {link.label}
-                </a>
-              ))}
-              <div className="pt-4">
+
+              {/* Connect Button */}
+              <div className="pt-4 border-t border-slate-800">
                 <ConnectButton />
               </div>
             </div>
@@ -113,4 +148,3 @@ export function Header() {
     </header>
   )
 }
-

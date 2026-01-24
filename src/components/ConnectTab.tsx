@@ -603,7 +603,8 @@ const ConnectTab: React.FC = () => {
       {/* CRITICAL: NO auto-open behavior - modal is passive, only shows buttons */}
       {showSharePopup && gmTxHash && gmConfirmed && !gmLoading && (
         <div 
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-auto"
+          style={{ zIndex: 9999 }}
           onMouseDown={(e) => e.preventDefault()}
           onMouseUp={(e) => e.preventDefault()}
           onClick={(e) => {
@@ -613,7 +614,7 @@ const ConnectTab: React.FC = () => {
           }}
         >
           <div 
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm" 
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -621,7 +622,7 @@ const ConnectTab: React.FC = () => {
             }} 
           />
           <div 
-            className="relative w-full max-w-lg glass-panel p-6 rounded-3xl border border-cyan-500/30 shadow-2xl"
+            className="relative w-full max-w-lg max-h-[90vh] overflow-auto glass-panel p-6 rounded-3xl border border-cyan-500/30 shadow-2xl my-auto"
             onClick={(e) => {
               // Prevent clicks on modal from bubbling
               e.stopPropagation();

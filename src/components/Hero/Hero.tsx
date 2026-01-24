@@ -1,50 +1,14 @@
-import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
-import { GlassCard } from './GlassCard'
+import { TransactionDemo } from '@/components/Demo/TransactionDemo'
+import { ExternalLink } from 'lucide-react'
+import { CONSTANTS } from '@/config/constants'
 import { GMButton } from '@/components/Web3/GMButton'
-import { Sparkles, ArrowLeftRight, Waves } from 'lucide-react'
-
-type StepCard = {
-  title: string
-  body: string
-  align: "left" | "right"
-  top: string
-  left?: string
-  right?: string
-}
 
 interface HeroProps {
   onNavigateToMint?: () => void
 }
 
-export function Hero({ onNavigateToMint }: HeroProps) {
-  const cards = useMemo<StepCard[]>(
-    () => [
-      {
-        title: "Deterministic Finality",
-        body: "Transações com confirmação previsível e rápida, ideal para dApps que exigem UX fluido.",
-        align: "left",
-        top: "top-[14%]",
-        left: "left-[4%]",
-      },
-      {
-        title: "USDC como Gas",
-        body: "Pague taxas com USDC (sem precisar de token extra), simplificando a entrada de novos usuários.",
-        align: "right",
-        top: "top-[34%]",
-        right: "right-[4%]",
-      },
-      {
-        title: "Stable Fees + Builder Focus",
-        body: "Custos estáveis e ambiente perfeito para builders: mint, pagamentos, NFTs e automação on-chain.",
-        align: "left",
-        top: "top-[60%]",
-        left: "left-[8%]",
-      },
-    ],
-    []
-  )
+export function Hero({}: HeroProps) {
 
   return (
     <div className="relative overflow-hidden">
@@ -91,80 +55,374 @@ export function Hero({ onNavigateToMint }: HeroProps) {
           Experience the future of deterministic finality. Native USDC gas, stable fees, and instant settlement.
         </motion.p>
 
-        {/* CTAs */}
+        {/* Action Cards Grid with Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-4"
+          className="mt-12 max-w-7xl mx-auto"
         >
-          <GMButton />
-          
-          {onNavigateToMint && (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onNavigateToMint}
-              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 font-bold text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all"
+          {/* Desktop Layout (>=1024px) */}
+          <div className="hidden lg:block space-y-6">
+            {/* Send GM CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="flex justify-center pt-4"
             >
-              <Sparkles className="h-5 w-5" />
-              <span>Mint NFTs</span>
-            </motion.button>
-          )}
+              <div className="[&>button]:rounded-full [&>button]:px-6 [&>button]:py-3 [&>button]:text-base [&>button]:font-semibold">
+                <GMButton />
+              </div>
+            </motion.div>
 
-          <Link to="/swap">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center justify-center gap-2 rounded-xl border border-purple-500/50 bg-purple-500/10 px-6 py-3 font-semibold hover:bg-purple-500/20 transition-all"
+            {/* Send USDC Form */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex justify-center"
             >
-              <ArrowLeftRight className="h-5 w-5" />
-              <span>Swap</span>
-            </motion.button>
-          </Link>
+              <div className="w-full max-w-md">
+                <TransactionDemo />
+              </div>
+            </motion.div>
 
-          <Link to="/pools">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center justify-center gap-2 rounded-xl border border-purple-500/50 bg-purple-500/10 px-6 py-3 font-semibold hover:bg-purple-500/20 transition-all"
+            {/* 4 Cards em uma linha */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+              className="grid grid-cols-4 gap-4"
             >
-              <Waves className="h-5 w-5" />
-              <span>Pools</span>
-            </motion.button>
-          </Link>
-        </motion.div>
+              <motion.a
+                href={CONSTANTS.LINKS.docs}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-5 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[120px]">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                    <h3 className="text-white font-semibold tracking-wide">Documentation</h3>
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-200/85">Learn about Arc Network</p>
+                  <ExternalLink className="h-4 w-4 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors" />
+                </div>
+              </motion.a>
 
-        {/* Hero Visual Area */}
-        <div className="relative mt-10 md:mt-14 h-[520px] md:h-[560px]">
-          {/* Glass Cards */}
-          <div className="hidden md:block">
-            {cards.map((card, idx) => (
-              <GlassCard key={idx} {...card} delay={0.5 + idx * 0.1} />
-            ))}
+              <motion.a
+                href={CONSTANTS.LINKS.explorer}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-5 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[120px]">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                    <h3 className="text-white font-semibold tracking-wide">Explorer</h3>
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-200/85">Browse transactions</p>
+                  <ExternalLink className="h-4 w-4 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors" />
+                </div>
+              </motion.a>
+
+              <motion.a
+                href={CONSTANTS.LINKS.faucet}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-5 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[120px]">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                    <h3 className="text-white font-semibold tracking-wide">Faucet</h3>
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-200/85">Get test tokens</p>
+                  <ExternalLink className="h-4 w-4 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors" />
+                </div>
+              </motion.a>
+
+              <motion.a
+                href={CONSTANTS.LINKS.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-5 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[120px]">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                    <h3 className="text-white font-semibold tracking-wide">GitHub</h3>
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-200/85">View source code</p>
+                  <ExternalLink className="h-4 w-4 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors" />
+                </div>
+              </motion.a>
+            </motion.div>
           </div>
 
-          {/* Mobile Cards */}
-          <div className="absolute left-0 right-0 bottom-0 z-20 md:hidden px-2">
-            <div className="grid gap-3">
-              {cards.map((c, idx) => (
+          {/* Tablet Layout (768px-1023px) */}
+          <div className="hidden md:block lg:hidden space-y-6">
+            {/* Send GM CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="flex justify-center pt-4"
+            >
+              <div className="[&>button]:rounded-full [&>button]:px-6 [&>button]:py-3 [&>button]:text-base [&>button]:font-semibold">
+                <GMButton />
+              </div>
+            </motion.div>
+
+            {/* Send USDC Form */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex justify-center"
+            >
+              <div className="w-full max-w-md">
+                <TransactionDemo />
+              </div>
+            </motion.div>
+
+            {/* Cards em 2 colunas */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+              className="grid grid-cols-2 gap-4"
+            >
+              <motion.a
+              href={CONSTANTS.LINKS.docs}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                  <h3 className="text-white font-semibold text-sm">Documentation</h3>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-200/85">Learn about Arc Network</p>
+                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+              </div>
+            </motion.a>
+
+            <motion.a
+              href={CONSTANTS.LINKS.explorer}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                  <h3 className="text-white font-semibold text-sm">Explorer</h3>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-200/85">Browse transactions</p>
+                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+              </div>
+            </motion.a>
+
+            <motion.a
+              href={CONSTANTS.LINKS.faucet}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                  <h3 className="text-white font-semibold text-sm">Faucet</h3>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-200/85">Get test tokens</p>
+                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+              </div>
+            </motion.a>
+
+            <motion.a
+              href={CONSTANTS.LINKS.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.65 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                  <h3 className="text-white font-semibold text-sm">GitHub</h3>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-200/85">View source code</p>
+                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+              </div>
+            </motion.a>
+            </motion.div>
+          </div>
+
+          {/* Mobile Layout (<768px) */}
+          <div className="md:hidden space-y-4">
+            {/* Send GM CTA primeiro */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="flex justify-center pt-4"
+            >
+              <div className="[&>button]:rounded-full [&>button]:px-5 [&>button]:py-2.5 [&>button]:text-sm [&>button]:font-semibold w-full max-w-xs">
+                <GMButton />
+              </div>
+            </motion.div>
+
+            {/* Send USDC Form */}
                 <motion.div
-                  key={`m-${idx}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <TransactionDemo />
+            </motion.div>
+
+            {/* Cards em 2 colunas se couber, senão 1 */}
+            <div className="grid grid-cols-2 gap-4">
+              <motion.a
+                href={CONSTANTS.LINKS.docs}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                    <h3 className="text-white font-semibold text-sm">Documentation</h3>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-200/85">Learn about Arc Network</p>
+                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                </div>
+              </motion.a>
+
+              <motion.a
+                href={CONSTANTS.LINKS.explorer}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                    <h3 className="text-white font-semibold text-sm">Explorer</h3>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-200/85">Browse transactions</p>
+                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                </div>
+              </motion.a>
+
+              <motion.a
+                href={CONSTANTS.LINKS.faucet}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                    <h3 className="text-white font-semibold text-sm">Faucet</h3>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-200/85">Get test tokens</p>
+                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                </div>
+              </motion.a>
+
+              <motion.a
+                href={CONSTANTS.LINKS.github}
+                target="_blank"
+                rel="noopener noreferrer"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + idx * 0.1 }}
-                  className="rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 shadow-[0_20px_80px_rgba(0,0,0,0.45)]"
+                transition={{ delay: 0.75 }}
+                whileHover={{ y: -2, scale: 1.01 }}
+                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 transition-all duration-300 shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] hover:border-cyan-500/40 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
                 >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
+                <div className="relative flex flex-col gap-2 items-start text-left">
                   <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-cyan-400" />
-                    <h3 className="font-semibold">{c.title}</h3>
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
+                    <h3 className="text-white font-semibold text-sm">GitHub</h3>
                   </div>
-                  <p className="mt-2 text-sm text-slate-200/85">{c.body}</p>
-                </motion.div>
-              ))}
+                  <p className="text-xs leading-relaxed text-slate-200/85">View source code</p>
+                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                </div>
+              </motion.a>
             </div>
           </div>
-        </div>
+        </motion.div>
+
       </div>
     </div>
   )

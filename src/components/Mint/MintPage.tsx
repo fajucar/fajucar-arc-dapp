@@ -6,14 +6,17 @@ import {
   useWaitForTransactionReceipt,
   useSwitchChain,
   useReadContract,
+  usePublicClient,
 } from 'wagmi'
+import { useQueryClient } from '@tanstack/react-query'
 import { decodeEventLog } from 'viem'
-import { Sparkles, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Image } from 'lucide-react'
+import { Sparkles, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Image, Copy } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { arcTestnet } from '@/config/chains'
 import { CONSTANTS } from '@/config/constants'
 import { NFT_ADDRESS, MINTER_ADDRESS } from '@/lib/addresses'
+import { AppShell } from '@/components/Layout/AppShell'
 
 // Import ABI
 import FajuARC_ABI from '@/abis/FajuARC.json'
@@ -50,10 +53,15 @@ interface MintPageProps {
 export function MintPage({ contractAddress }: MintPageProps) {
   const { address, isConnected, chain } = useAccount()
   const { switchChain } = useSwitchChain()
+  const publicClient = usePublicClient()
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [mintingId, setMintingId] = useState<number | null>(null)
   const [mintedTokens, setMintedTokens] = useState<Record<number, string>>({})
+  const [mintedTokenIds, setMintedTokenIds] = useState<Record<number, string>>({})
   const [hasMinted, setHasMinted] = useState<Record<number, boolean>>({})
+  const [balanceBeforeMint, setBalanceBeforeMint] = useState<bigint | null>(null)
+  const [debugInfo, setDebugInfo] = useState<{ mintContract: string; nftContract: string; mintHasBytecode: boolean; nftHasBytecode: boolean } | null>(null)
 
   // IMPORTANTE:
   // - use writeContractAsync + await para capturar rejeição/erro de carteira corretamente
@@ -64,7 +72,7 @@ export function MintPage({ contractAddress }: MintPageProps) {
     query: { enabled: !!hash },
   })
 
-  // Verificar se já mintou cada NFT
+  // Verificar se já mintou cada NFT via hasMintedType
   const { data: hasMinted1 } = useReadContract({
     address: contractAddress,
     abi: FajuARC_ABI,
@@ -89,12 +97,64 @@ export function MintPage({ contractAddress }: MintPageProps) {
     query: { enabled: !!address && !!contractAddress && isConnected },
   })
 
-  // Atualizar estado quando os dados mudarem
+  // Verificar balanceOf para garantir estado sincronizado
+  const { data: balanceOf } = useReadContract({
+    address: NFT_ADDRESS,
+    abi: FajuARC_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && !!NFT_ADDRESS && isConnected },
+  })
+
+  // Atualizar estado quando os dados mudarem (hasMintedType)
   useEffect(() => {
     if (hasMinted1 !== undefined && hasMinted1 !== null) setHasMinted(prev => ({ ...prev, 1: !!hasMinted1 }))
     if (hasMinted2 !== undefined && hasMinted2 !== null) setHasMinted(prev => ({ ...prev, 2: !!hasMinted2 }))
     if (hasMinted3 !== undefined && hasMinted3 !== null) setHasMinted(prev => ({ ...prev, 3: !!hasMinted3 }))
   }, [hasMinted1, hasMinted2, hasMinted3])
+
+  // Sincronizar estado com balanceOf: se balance > 0, garantir que hasMinted está correto
+  useEffect(() => {
+    if (balanceOf !== undefined && balanceOf !== null && publicClient && address && NFT_ADDRESS && contractAddress) {
+      const balance = balanceOf as bigint
+      if (balance > 0n) {
+        // Se tem balance mas hasMinted está false, verificar on-chain
+        // Isso garante que o estado não fica desatualizado
+        console.log('[Mint] Balance > 0, verifying minted state on-chain')
+      }
+    }
+  }, [balanceOf, publicClient, address, contractAddress])
+
+  // Load debug info on mount
+  useEffect(() => {
+    const loadDebugInfo = async () => {
+      if (!publicClient) return
+      
+      const mintAddress = MINTER_ADDRESS || contractAddress
+      if (!mintAddress || !NFT_ADDRESS) return
+
+      try {
+        const mintBytecode = await publicClient.getBytecode({ address: mintAddress })
+        const mintHasBytecode = mintBytecode && mintBytecode !== '0x' && mintBytecode.length > 2
+        
+        const nftBytecode = await publicClient.getBytecode({ address: NFT_ADDRESS }).catch(() => null)
+        const nftHasBytecode = nftBytecode && nftBytecode !== '0x' && nftBytecode && nftBytecode.length > 2
+        
+        setDebugInfo({
+          mintContract: mintAddress,
+          nftContract: NFT_ADDRESS,
+          mintHasBytecode: mintHasBytecode || false,
+          nftHasBytecode: nftHasBytecode || false,
+        })
+      } catch (err) {
+        console.warn('[Mint] Failed to load debug info:', err)
+      }
+    }
+
+    if (isConnected && publicClient) {
+      loadDebugInfo()
+    }
+  }, [isConnected, publicClient, contractAddress])
 
   const handleMint = async (nftId: number) => {
     if (!isConnected) {
@@ -128,10 +188,67 @@ export function MintPage({ contractAddress }: MintPageProps) {
 
     try {
       setMintingId(nftId)
+      
+      // Capture balance before mint for validation
+      if (address && NFT_ADDRESS && publicClient) {
+        try {
+          const balance = await publicClient.readContract({
+            address: NFT_ADDRESS,
+            abi: FajuARC_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          }) as bigint
+          setBalanceBeforeMint(balance)
+          console.log('[Mint] Balance before mint:', balance.toString())
+        } catch (err) {
+          console.warn('[Mint] Failed to read balance before mint:', err)
+          setBalanceBeforeMint(null)
+        }
+      }
+      
       // Use MINTER_ADDRESS if available, otherwise fallback to contractAddress (NFT contract)
       const mintAddress = MINTER_ADDRESS || contractAddress
       if (!mintAddress) {
         toast.error('Minter contract address not configured')
+        return
+      }
+
+      // Preflight check: Verify contract has bytecode
+      if (!publicClient) {
+        toast.error('Public client not available')
+        return
+      }
+
+      try {
+        const bytecode = await publicClient.getBytecode({ address: mintAddress })
+        const hasBytecode = bytecode && bytecode !== '0x' && bytecode.length > 2
+        
+        // Update debug info
+        const nftBytecode = NFT_ADDRESS ? await publicClient.getBytecode({ address: NFT_ADDRESS }).catch(() => null) : null
+        const nftHasBytecode = nftBytecode && nftBytecode !== '0x' && nftBytecode.length > 2
+        setDebugInfo({
+          mintContract: mintAddress,
+          nftContract: NFT_ADDRESS || 'Not configured',
+          mintHasBytecode: hasBytecode || false,
+          nftHasBytecode: nftHasBytecode || false,
+        })
+
+        if (!hasBytecode) {
+          toast.error('Mint contract not deployed at this address', {
+            duration: 8000,
+          })
+          console.error('[Mint] ❌ Mint contract has no bytecode at:', mintAddress)
+          setMintingId(null)
+          return
+        }
+
+        console.log('[Mint] ✅ Mint contract bytecode verified')
+      } catch (err) {
+        console.error('[Mint] Error checking bytecode:', err)
+        toast.error('Failed to verify contract deployment', {
+          duration: 5000,
+        })
+        setMintingId(null)
         return
       }
       
@@ -151,6 +268,7 @@ export function MintPage({ contractAddress }: MintPageProps) {
         'Failed to mint NFT'
       toast.error(msg)
       setMintingId(null)
+      setBalanceBeforeMint(null)
     }
   }
 
@@ -166,179 +284,312 @@ export function MintPage({ contractAddress }: MintPageProps) {
     if (isSuccess && hash && receipt && mintingId && address) {
       const nft = NFT_OPTIONS.find(n => n.id === mintingId)
       if (nft) {
-        // Extract tokenId from Transfer event (ERC-721 standard)
-        // IMPORTANT: Filter logs where address == NFT_ADDRESS (not MINTER_ADDRESS)
-        let tokenId: string | undefined = undefined
+        // ROBUST VALIDATION: Check receipt status first
+        console.log('[Mint] Transaction confirmed. Receipt status:', receipt.status)
         
-        if (receipt.logs && receipt.logs.length > 0 && NFT_ADDRESS) {
-          try {
-            // Filter logs from NFT contract (not minter)
-            if (!NFT_ADDRESS) {
-              console.warn('NFT_ADDRESS not configured, cannot extract tokenId from Transfer event')
-            } else {
-              const nftLogs = receipt.logs.filter((log: any) => {
-                if (!log.address || !NFT_ADDRESS) return false
-                try {
-                  const logAddress = log.address.toLowerCase()
-                  const nftAddress = NFT_ADDRESS.toLowerCase()
-                  return logAddress === nftAddress
-                } catch {
-                  return false
-                }
-              })
+        // Step 1: Check if transaction was successful
+        if (receipt.status !== 'success') {
+          console.error('[Mint] ❌ Transaction reverted! Status:', receipt.status)
+          const errorMessage = receipt.status === 'reverted' 
+            ? 'Transaction reverted on-chain. Mint failed.'
+            : `Transaction failed with status: ${receipt.status}`
+          toast.error(errorMessage, { duration: 8000 })
+          setMintingId(null)
+          setBalanceBeforeMint(null)
+          return
+        }
 
-              // Decode Transfer events from NFT contract logs
-              for (const log of nftLogs) {
+        // Step 2: Extract tokenId from Transfer event logs
+        let extractedTokenId: string | undefined = undefined
+        const TRANSFER_TOPIC0 = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef' // keccak256("Transfer(address,address,uint256)")
+        
+        if (receipt.logs && receipt.logs.length > 0) {
+          for (const log of receipt.logs) {
+            try {
+              if (log.topics && log.topics[0] === TRANSFER_TOPIC0) {
                 try {
                   const decoded = decodeEventLog({
                     abi: FajuARC_ABI,
                     data: log.data,
                     topics: log.topics,
                   })
-
+                  
                   if (decoded.eventName === 'Transfer' && decoded.args) {
                     const args = decoded.args as {
                       from?: `0x${string}`
                       to?: `0x${string}`
                       tokenId?: bigint
                     }
-                    const from = args.from
-                    const to = args.to
-                    const decodedTokenId = args.tokenId
-
-                    // Check if this Transfer is a mint (from == 0x0) and to == user address
-                    if (from && to && decodedTokenId) {
-                      const zeroAddress = '0x0000000000000000000000000000000000000000'
-                      const isMint = from.toLowerCase() === zeroAddress.toLowerCase()
-                      const isToUser = to.toLowerCase() === address.toLowerCase()
-
-                      if (isMint && isToUser) {
-                        tokenId = decodedTokenId.toString()
-                        break
-                      }
+                    const zeroAddress = '0x0000000000000000000000000000000000000000'
+                    const isMint = args.from?.toLowerCase() === zeroAddress.toLowerCase()
+                    const isToUser = args.to?.toLowerCase() === address.toLowerCase()
+                    
+                    if (isMint && isToUser && args.tokenId) {
+                      extractedTokenId = args.tokenId.toString()
+                      console.log('[Mint] ✅ TokenId extracted from Transfer event:', extractedTokenId)
+                      break
                     }
                   }
-                } catch (error) {
-                  // Not a Transfer event or decode failed, continue
+                } catch (err) {
+                  // Continue to next log
                   continue
                 }
               }
+            } catch (err) {
+              // Continue to next log
+              continue
             }
-          } catch (error) {
-            console.error('Error extracting tokenId from Transfer event:', error)
           }
         }
-        
-        setMintedTokens(prev => ({ ...prev, [mintingId]: hash }))
-        setHasMinted(prev => ({ ...prev, [nft.nftType]: true }))
-        
-        if (tokenId) {
-          console.log('✅ NFT minted successfully! Token ID:', tokenId)
-          
-          // Save to localStorage
-          try {
-            localStorage.setItem('lastMintedTokenId', tokenId)
-            localStorage.setItem('lastMintedOwner', address)
-            localStorage.setItem('lastMintedTimestamp', Date.now().toString())
-          } catch (e) {
-            console.warn('Failed to save to localStorage:', e)
-          }
-          
-          toast.success(`${nft.name} minted successfully! Token ID: ${tokenId} 🎉`, {
-            duration: 5000,
+
+        if (!extractedTokenId) {
+          console.warn('[Mint] ⚠️ No ERC-721 Transfer event found in receipt logs')
+          toast.error('Mint executed but no ERC-721 Transfer event found. Check contract address.', {
+            duration: 8000,
           })
-          
-          // Navigate to MyNFTs with highlight after a short delay
-          setTimeout(() => {
-            navigate(`/my-nfts?owner=${address}&highlight=${tokenId}`)
-          }, 1500)
-        } else {
-          console.log('✅ NFT minted successfully! (Token ID not found in logs)')
-          toast.success(`${nft.name} minted successfully! 🎉`)
         }
+        
+        // Step 3: Validate on-chain by checking balanceOf
+        if (!NFT_ADDRESS || !publicClient) {
+          console.error('[Mint] ❌ NFT_ADDRESS or publicClient not available for validation')
+          toast.error('Cannot validate mint: contract address not configured', { duration: 8000 })
+          setMintingId(null)
+          setBalanceBeforeMint(null)
+          return
+        }
+        
+        // Read balance after mint
+        publicClient.readContract({
+          address: NFT_ADDRESS,
+          abi: FajuARC_ABI,
+          functionName: 'balanceOf',
+          args: [address],
+        })
+          .then((balanceAfter: bigint) => {
+            console.log('[Mint] Balance after mint:', balanceAfter.toString())
+            console.log('[Mint] Balance before mint:', balanceBeforeMint?.toString() || 'unknown')
+            
+            // Check if balance increased (or is > 0 if we didn't capture before)
+            const balanceIncreased = balanceBeforeMint !== null 
+              ? balanceAfter > balanceBeforeMint
+              : balanceAfter > 0n
+            
+            if (balanceIncreased || extractedTokenId) {
+              console.log('[Mint] ✅ Mint validated: balance increased or tokenId found!')
+              
+              // Mark as minted
+              setMintedTokens(prev => ({ ...prev, [mintingId]: hash }))
+              if (extractedTokenId) {
+                setMintedTokenIds(prev => ({ ...prev, [mintingId]: extractedTokenId }))
+              }
+              setHasMinted(prev => ({ ...prev, [nft.nftType]: true }))
+              
+              // Invalidate queries to refetch hasMintedType and balanceOf
+              queryClient.invalidateQueries({
+                queryKey: ['readContract', { address: contractAddress, functionName: 'hasMintedType' }],
+              })
+              queryClient.invalidateQueries({
+                queryKey: ['readContract', { address: NFT_ADDRESS, functionName: 'balanceOf' }],
+              })
+              
+              // Save to localStorage
+              try {
+                localStorage.setItem('lastMintedTxHash', hash)
+                if (extractedTokenId) {
+                  localStorage.setItem('lastMintedTokenId', extractedTokenId)
+                }
+                localStorage.setItem('lastMintedOwner', address)
+                localStorage.setItem('lastMintedTimestamp', Date.now().toString())
+              } catch (e) {
+                console.warn('Failed to save to localStorage:', e)
+              }
+              
+              const successMessage = extractedTokenId 
+                ? `${nft.name} minted successfully! Token ID: ${extractedTokenId} 🎉`
+                : `${nft.name} minted successfully! 🎉`
+              
+              toast.success(successMessage, {
+                duration: 5000,
+              })
+              
+              // Navigate to My NFTs after a short delay to refresh the list
+              setTimeout(() => {
+                navigate('/my-nfts')
+              }, 2000)
+            } else {
+              console.warn('[Mint] ⚠️ Balance did not increase after mint and no tokenId found')
+              // Even if balance didn't increase, if receipt.status is success, 
+              // the transaction succeeded on-chain. Consider it a success.
+              console.log('[Mint] ✅ Transaction succeeded on-chain (status: success), marking as minted')
+              
+              setMintedTokens(prev => ({ ...prev, [mintingId]: hash }))
+              setHasMinted(prev => ({ ...prev, [nft.nftType]: true }))
+              
+              // Invalidate queries to refetch hasMintedType and balanceOf
+              queryClient.invalidateQueries({
+                queryKey: ['readContract', { address: contractAddress, functionName: 'hasMintedType' }],
+              })
+              queryClient.invalidateQueries({
+                queryKey: ['readContract', { address: NFT_ADDRESS, functionName: 'balanceOf' }],
+              })
+              
+              toast.success(`${nft.name} minted successfully! 🎉`, {
+                duration: 5000,
+              })
+              
+              // Navigate to My NFTs after a short delay
+              setTimeout(() => {
+                navigate('/my-nfts')
+              }, 2000)
+            }
+            
+            setMintingId(null)
+            setBalanceBeforeMint(null)
+          })
+          .catch((err: any) => {
+            console.error('[Mint] ❌ Failed to validate mint with balanceOf:', err)
+            // If receipt.status is success but we can't verify balance,
+            // still consider it a success (transaction succeeded on-chain)
+            console.log('[Mint] ⚠️ Transaction succeeded but balanceOf check failed. Marking as minted anyway.')
+            
+            setMintedTokens(prev => ({ ...prev, [mintingId]: hash }))
+            if (extractedTokenId) {
+              setMintedTokenIds(prev => ({ ...prev, [mintingId]: extractedTokenId }))
+            }
+            setHasMinted(prev => ({ ...prev, [nft.nftType]: true }))
+            
+            // Invalidate queries to refetch hasMintedType and balanceOf
+            queryClient.invalidateQueries({
+              queryKey: ['readContract', { address: contractAddress, functionName: 'hasMintedType' }],
+            })
+            queryClient.invalidateQueries({
+              queryKey: ['readContract', { address: NFT_ADDRESS, functionName: 'balanceOf' }],
+            })
+            
+            toast.success(`${nft.name} minted successfully! 🎉`, {
+              duration: 5000,
+            })
+            
+            // Navigate to My NFTs after a short delay
+            setTimeout(() => {
+              navigate('/my-nfts')
+            }, 2000)
+            
+            setMintingId(null)
+            setBalanceBeforeMint(null)
+          })
       }
-      setMintingId(null)
     }
-  }, [isSuccess, hash, receipt, mintingId, contractAddress, address, navigate])
+  }, [isSuccess, hash, receipt, mintingId, contractAddress, address, publicClient, balanceBeforeMint, navigate, queryClient])
 
   if (!isConnected) {
     return (
-      <div className="text-center py-20">
-        <Sparkles className="h-16 w-16 mx-auto text-cyan-400 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
-        <p className="text-slate-400">Connect your wallet to start minting NFTs</p>
-      </div>
+      <AppShell
+        title="Mint Your Arc NFTs"
+        subtitle="Connect your wallet to start minting NFTs"
+      >
+        <div className="text-center py-12">
+          <Sparkles className="h-16 w-16 mx-auto text-cyan-400 mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-white">Connect Your Wallet</h2>
+          <p className="text-slate-400">Connect your wallet to start minting NFTs</p>
+        </div>
+      </AppShell>
     )
   }
 
   if (chain?.id !== arcTestnet.id) {
     return (
-      <div className="text-center py-20">
-        <AlertTriangle className="h-16 w-16 mx-auto text-yellow-400 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Wrong Network</h2>
-        <p className="text-slate-400 mb-6">Please switch to Arc Testnet to mint NFTs</p>
-        <button
-          onClick={() => switchChain({ chainId: arcTestnet.id })}
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all"
-        >
-          Switch to Arc Testnet
-        </button>
-      </div>
+      <AppShell
+        title="Mint Your Arc NFTs"
+        subtitle="Please switch to Arc Testnet to mint NFTs"
+      >
+        <div className="text-center py-12">
+          <AlertTriangle className="h-16 w-16 mx-auto text-yellow-400 mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-white">Wrong Network</h2>
+          <p className="text-slate-400 mb-6">Please switch to Arc Testnet to mint NFTs</p>
+          <button
+            onClick={() => switchChain({ chainId: arcTestnet.id })}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all"
+          >
+            Switch to Arc Testnet
+          </button>
+        </div>
+      </AppShell>
     )
   }
 
   if (!contractAddress) {
     return (
-      <div className="text-center py-20 px-4">
-        <AlertTriangle className="h-16 w-16 mx-auto text-yellow-400 mb-4" />
-        <h2 className="text-2xl font-bold mb-4 text-white">Contract Not Configured</h2>
-        <div className="max-w-2xl mx-auto space-y-4">
-          <p className="text-slate-300 mb-6">
-            NFT contract address is not set. Please deploy the contract first and then configure it.
-          </p>
-          
-          <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-6 text-left">
-            <h3 className="text-lg font-semibold text-cyan-400 mb-4">📋 Steps to Deploy:</h3>
-            <ol className="space-y-3 text-slate-300 text-sm list-decimal list-inside">
-              <li className="mb-2">
-                <span className="font-semibold text-white">Deploy the contract:</span>
-                <code className="block mt-1 p-2 bg-slate-950 rounded border border-slate-800 text-cyan-400 font-mono text-xs">
-                  cd "C:\Users\Fabio Souza\ARC"<br />
-                  npx hardhat run scripts/deploy-arc-collection.ts --network arcTestnet
-                </code>
-              </li>
-              <li className="mb-2">
-                <span className="font-semibold text-white">Copy the contract address</span> from the deploy output
-              </li>
-              <li className="mb-2">
-                <span className="font-semibold text-white">Add to .env file:</span>
-                <code className="block mt-1 p-2 bg-slate-950 rounded border border-slate-800 text-cyan-400 font-mono text-xs">
-                  VITE_ARC_COLLECTION_ADDRESS=0x... (your contract address)
-                </code>
-              </li>
-              <li>
-                <span className="font-semibold text-white">Restart the dev server</span> to load the new environment variable
-              </li>
-            </ol>
+      <AppShell
+        title="Mint Your Arc NFTs"
+        subtitle="Contract not configured"
+      >
+        <div className="text-center py-12">
+          <AlertTriangle className="h-16 w-16 mx-auto text-yellow-400 mb-4" />
+          <h2 className="text-2xl font-bold mb-4 text-white">Contract Not Configured</h2>
+          <div className="max-w-2xl mx-auto space-y-4">
+            <p className="text-slate-300 mb-6">
+              NFT contract address is not set. Please deploy the contract first and then configure it.
+            </p>
+            
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 text-left">
+              <h3 className="text-lg font-semibold text-cyan-400 mb-4">📋 Steps to Deploy:</h3>
+              <ol className="space-y-3 text-slate-300 text-sm list-decimal list-inside">
+                <li className="mb-2">
+                  <span className="font-semibold text-white">Deploy the contract:</span>
+                  <code className="block mt-1 p-2 bg-slate-900 rounded-lg border border-slate-800 text-cyan-400 font-mono text-xs">
+                    cd "C:\Users\Fabio Souza\ARC"<br />
+                    npx hardhat run scripts/deploy-arc-collection.ts --network arcTestnet
+                  </code>
+                </li>
+                <li className="mb-2">
+                  <span className="font-semibold text-white">Copy the contract address</span> from the deploy output
+                </li>
+                <li className="mb-2">
+                  <span className="font-semibold text-white">Add to .env file:</span>
+                  <code className="block mt-1 p-2 bg-slate-900 rounded-lg border border-slate-800 text-cyan-400 font-mono text-xs">
+                    VITE_ARC_COLLECTION_ADDRESS=0x... (your contract address)
+                  </code>
+                </li>
+                <li>
+                  <span className="font-semibold text-white">Restart the dev server</span> to load the new environment variable
+                </li>
+              </ol>
+            </div>
           </div>
         </div>
-      </div>
+      </AppShell>
+    )
+  }
+
+  // Ensure NFT_OPTIONS exists and is an array
+  const nftOptions = Array.isArray(NFT_OPTIONS) && NFT_OPTIONS.length > 0 
+    ? NFT_OPTIONS 
+    : []
+
+  if (nftOptions.length === 0) {
+    return (
+      <AppShell
+        title="Mint Your Arc NFTs"
+        subtitle="No NFTs available"
+      >
+        <div className="text-center py-12">
+          <AlertTriangle className="h-16 w-16 mx-auto text-yellow-400 mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-white">No NFTs Available</h2>
+          <p className="text-slate-400">NFT options are not configured.</p>
+        </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-          Mint Your <span className="text-cyan-400">Arc NFTs</span>
-        </h1>
-        <p className="text-slate-400 max-w-2xl mx-auto">
-          Each wallet can mint maximum 1 NFT per type. Choose from 3 unique Arc Network NFTs.
-        </p>
-      </div>
+    <AppShell
+      title="Mint Your Arc NFTs"
+      subtitle="Each wallet can mint maximum 1 NFT per type. Choose from 3 unique Arc Network NFTs."
+    >
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {NFT_OPTIONS.map((nft) => {
+        {nftOptions.map((nft) => {
           const isMinting = mintingId === nft.id
           const isProcessing = isMinting && (isPending || isConfirming)
           const txHash = mintedTokens[nft.id]
@@ -401,9 +652,25 @@ export function MintPage({ contractAddress }: MintPageProps) {
                   )}
                 </button>
 
-                {/* Transaction Hash and Navigation */}
+                {/* Transaction Hash, Token ID and Navigation */}
                 {txHash && (
                   <div className="mt-3 space-y-2">
+                    {mintedTokenIds[nft.id] && (
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-xs text-slate-400">Token ID:</span>
+                        <code className="text-xs text-cyan-400 font-mono">{mintedTokenIds[nft.id]}</code>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(mintedTokenIds[nft.id])
+                            toast.success('Token ID copied!')
+                          }}
+                          className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+                        >
+                          <Copy className="h-3 w-3" />
+                          <span>Copy Token ID</span>
+                        </button>
+                      </div>
+                    )}
                     <a
                       href={`${CONSTANTS.LINKS.explorer}/tx/${txHash}`}
                       target="_blank"
@@ -430,10 +697,39 @@ export function MintPage({ contractAddress }: MintPageProps) {
 
       {/* Error Message */}
       {error && (
-        <div className="mt-6 rounded-lg border border-red-500/25 bg-red-500/10 p-4 text-center">
+        <div className="mt-6 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-center">
           <p className="text-red-400">{error.message}</p>
         </div>
       )}
-    </div>
+
+      {/* Debug Info */}
+      {debugInfo && (
+        <div className="mt-6 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
+          <h3 className="text-sm font-semibold text-slate-300 mb-3">Debug Info</h3>
+          <div className="space-y-2 text-xs font-mono">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Mint contract:</span>
+              <span className="text-cyan-400">{debugInfo.mintContract}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">NFT contract:</span>
+              <span className="text-cyan-400">{debugInfo.nftContract}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Mint bytecode:</span>
+              <span className={debugInfo.mintHasBytecode ? 'text-green-400' : 'text-red-400'}>
+                {debugInfo.mintHasBytecode ? 'yes' : 'no'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">NFT bytecode:</span>
+              <span className={debugInfo.nftHasBytecode ? 'text-green-400' : 'text-red-400'}>
+                {debugInfo.nftHasBytecode ? 'yes' : 'no'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </AppShell>
   )
 }

@@ -22,7 +22,9 @@
     "contracts:compile": "node scripts/check-contracts.cjs && npm --prefix contracts run compile || echo Contracts not configured",
     "contracts:export-abis": "node scripts/check-contracts.cjs && npm --prefix contracts run export-abis || echo Contracts not configured",
     "contracts:compile-and-export": "node scripts/check-contracts.cjs && npm --prefix contracts run compile-and-export || echo Contracts not configured. Run 'npm run contracts:setup' to create contracts folder.",
-    "debug:logs": "tsx scripts/debug-logs.ts"
+    "debug:logs": "tsx scripts/debug-logs.ts",
+    "test:mint-logs": "tsx scripts/test-mint-logs.ts",
+    "check:arc": "node scripts/check-arc.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",

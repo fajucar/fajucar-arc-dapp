@@ -72,16 +72,16 @@ export function TransactionDemo() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto"
+      className="w-full"
     >
-      <div className="rounded-2xl border border-cyan-500/25 bg-slate-900/50 backdrop-blur-xl p-6 md:p-8">
-        <h3 className="text-2xl font-bold mb-6">Send USDC</h3>
+      <div className="rounded-2xl border border-cyan-500/25 bg-slate-900/50 backdrop-blur-xl p-4">
+        <h3 className="text-lg font-bold mb-3">Send USDC</h3>
 
         {/* Form */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Recipient */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">
               Recipient Address
             </label>
             <input
@@ -95,7 +95,7 @@ export function TransactionDemo() {
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">
               Amount (USDC)
             </label>
             <input

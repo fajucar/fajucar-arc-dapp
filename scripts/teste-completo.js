@@ -21,7 +21,7 @@ if (fs.existsSync(envPath)) {
   console.log('   ✅ Arquivo .env encontrado');
 } else {
   console.log('   ❌ Arquivo .env NÃO encontrado!');
-  console.log('   💡 Execute: node scripts/create-env-simple.js');
+    console.log('   💡 Execute: npm run env:create');
   allTestsPassed = false;
 }
 console.log('');
@@ -104,7 +104,7 @@ if (allTestsPassed) {
   console.log('');
   console.log('🔧 CORREÇÕES NECESSÁRIAS:');
   if (!fs.existsSync(envPath)) {
-    console.log('   - Execute: node scripts/create-env-simple.js');
+    console.log('   - Execute: npm run env:create');
   }
   console.log('   - Verifique se o arquivo .env tem as 3 variáveis corretas');
   console.log('   - Certifique-se de que os endereços são válidos (começam com 0x e têm 40 caracteres)');

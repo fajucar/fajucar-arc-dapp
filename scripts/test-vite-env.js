@@ -56,6 +56,6 @@ if (allOk) {
   console.log('   4. Abra http://localhost:3000 e verifique o console (F12)');
 } else {
   console.log('❌ Algumas variáveis estão faltando ou inválidas!');
-  console.log('   Execute: node scripts/create-env-simple.js');
+  console.log('   Execute: npm run env:create');
   process.exit(1);
 }

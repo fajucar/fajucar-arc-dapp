@@ -4,9 +4,7 @@ import { getAddress } from 'ethers';
 // Debug: Log environment variables (remove in production)
 if (import.meta.env.DEV) {
   console.log('🔍 [contracts.ts] Environment Variables:');
-  console.log('  VITE_MOCK_USDC_ADDRESS:', import.meta.env.VITE_MOCK_USDC_ADDRESS || 'UNDEFINED');
-  console.log('  VITE_GIFT_CARD_NFT_ADDRESS:', import.meta.env.VITE_GIFT_CARD_NFT_ADDRESS || 'UNDEFINED');
-  console.log('  VITE_GIFT_CARD_MINTER_ADDRESS:', import.meta.env.VITE_GIFT_CARD_MINTER_ADDRESS || 'UNDEFINED');
+  console.log('  VITE_FAJUCAR_COLLECTION_ADDRESS:', import.meta.env.VITE_FAJUCAR_COLLECTION_ADDRESS || 'UNDEFINED');
 }
 
 // Helper function to get address with correct checksum
@@ -54,6 +52,26 @@ export const CONTRACT_ADDRESSES = {
   GIFT_CARD_NFT: getChecksumAddress(getEnvVar('VITE_GIFT_CARD_NFT_ADDRESS')),
   GIFT_CARD_MINTER: getChecksumAddress(getEnvVar('VITE_GIFT_CARD_MINTER_ADDRESS')),
 };
+
+// Fajucar Collection - Single contract for all NFT models
+// This is the new unified contract address
+export const FAJUCAR_COLLECTION_ADDRESS: `0x${string}` | undefined = (() => {
+  const addr = getChecksumAddress(getEnvVar('VITE_FAJUCAR_COLLECTION_ADDRESS'));
+  if (!addr) {
+    if (import.meta.env.DEV) {
+      console.error('❌ [contracts.ts] VITE_FAJUCAR_COLLECTION_ADDRESS is not configured!');
+      console.error('   Please set VITE_FAJUCAR_COLLECTION_ADDRESS in your .env file');
+    }
+    return undefined;
+  }
+  return addr as `0x${string}`;
+})();
+
+// Validate FAJUCAR_COLLECTION_ADDRESS on module load (in dev mode)
+if (import.meta.env.DEV && !FAJUCAR_COLLECTION_ADDRESS) {
+  console.error('❌ [contracts.ts] FAJUCAR_COLLECTION_ADDRESS is undefined!');
+  console.error('   Mint functionality will not work until VITE_FAJUCAR_COLLECTION_ADDRESS is set');
+}
 
 // Debug: Log parsed addresses
 if (import.meta.env.DEV) {

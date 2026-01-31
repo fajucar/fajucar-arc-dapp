@@ -1,0 +1,30 @@
+# Script para criar ZIP do dApp
+$zipFile = "dapp-backup.zip"
+
+# Remover ZIP existente se houver
+if (Test-Path $zipFile) {
+    Remove-Item $zipFile -Force
+}
+
+# Criar lista de arquivos e pastas para incluir (excluindo node_modules, .git, etc)
+$itemsToZip = @()
+
+Get-ChildItem -Path . | Where-Object {
+    $item = $_
+    $exclude = @('node_modules', '.git', 'dist', 'build', '.next', '.cache', 'dapp-backup.zip', 'create-zip.ps1')
+    -not ($exclude -contains $item.Name)
+} | ForEach-Object {
+    $itemsToZip += $_.FullName
+}
+
+# Criar o ZIP
+Compress-Archive -Path $itemsToZip -DestinationPath $zipFile -Force
+
+if (Test-Path $zipFile) {
+    $sizeMB = [math]::Round((Get-Item $zipFile).Length / 1MB, 2)
+    Write-Host "✅ ZIP criado com sucesso: $zipFile"
+    Write-Host "📦 Tamanho: $sizeMB MB"
+    Write-Host "📍 Localização: $(Resolve-Path $zipFile)"
+} else {
+    Write-Host "❌ Erro ao criar ZIP"
+}

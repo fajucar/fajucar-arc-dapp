@@ -1,19 +1,7 @@
-import { CONTRACT_ADDRESSES } from '../config/contracts';
+import { FAJUCAR_COLLECTION_ADDRESS } from '../config/contracts'
 
 export function ConfigError() {
-  const missingAddresses = [];
-  
-  if (!CONTRACT_ADDRESSES.MOCK_USDC || CONTRACT_ADDRESSES.MOCK_USDC === '') {
-    missingAddresses.push('VITE_MOCK_USDC_ADDRESS');
-  }
-  if (!CONTRACT_ADDRESSES.GIFT_CARD_NFT || CONTRACT_ADDRESSES.GIFT_CARD_NFT === '') {
-    missingAddresses.push('VITE_GIFT_CARD_NFT_ADDRESS');
-  }
-  if (!CONTRACT_ADDRESSES.GIFT_CARD_MINTER || CONTRACT_ADDRESSES.GIFT_CARD_MINTER === '') {
-    missingAddresses.push('VITE_GIFT_CARD_MINTER_ADDRESS');
-  }
-
-  if (missingAddresses.length === 0) return null;
+  if (FAJUCAR_COLLECTION_ADDRESS) return null
 
   return (
     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
@@ -24,40 +12,16 @@ export function ConfigError() {
           </svg>
         </div>
         <div className="ml-3">
-          <h3 className="text-sm font-medium text-yellow-800">
-            Configuração necessária
-          </h3>
+          <h3 className="text-sm font-medium text-yellow-800">Collection contract address not configured</h3>
           <div className="mt-2 text-sm text-yellow-700">
-            <p className="font-semibold mb-2">Os endereços dos contratos não estão configurados ou o servidor precisa ser reiniciado.</p>
-            <ol className="list-decimal list-inside mt-2 space-y-2">
-              <li>
-                <span className="font-semibold">Se o arquivo .env não existe:</span>
-                <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
-                  <li>Execute: <code className="bg-yellow-100 px-1 rounded">npm run deploy:mock</code> para fazer deploy dos contratos</li>
-                  <li>Crie o arquivo <code className="bg-yellow-100 px-1 rounded">frontend/.env</code> com os endereços:</li>
-                </ul>
-                <pre className="mt-2 bg-yellow-100 p-2 rounded text-xs overflow-x-auto">
-{`VITE_MOCK_USDC_ADDRESS=0x...
-VITE_GIFT_CARD_NFT_ADDRESS=0x...
-VITE_GIFT_CARD_MINTER_ADDRESS=0x...`}
-                </pre>
-              </li>
-              <li>
-                <span className="font-semibold">Se o arquivo .env já existe:</span>
-                <ul className="list-disc list-inside ml-4 mt-1">
-                  <li><strong>Pare o servidor Vite (Ctrl+C no terminal)</strong></li>
-                  <li><strong>Reinicie com: <code className="bg-yellow-100 px-1 rounded">npm run dev</code></strong></li>
-                  <li>O Vite só carrega variáveis de ambiente quando o servidor é iniciado!</li>
-                </ul>
-              </li>
-            </ol>
-            <p className="mt-3 font-semibold">Faltando: {missingAddresses.join(', ')}</p>
+            <p className="font-semibold mb-2">Set VITE_FAJUCAR_COLLECTION_ADDRESS in your .env file and restart the dev server.</p>
+            <pre className="mt-2 bg-yellow-100 p-2 rounded text-xs overflow-x-auto">
+{`VITE_FAJUCAR_COLLECTION_ADDRESS=0x1499947A89Ef05B023176D31191BDC5CCF3d0B7E`}
+            </pre>
+            <p className="mt-2">Reinicie o Vite (Ctrl+C e <code className="bg-yellow-100 px-1 rounded">npm run dev</code>) após alterar o .env.</p>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
-
-
-

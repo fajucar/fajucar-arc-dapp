@@ -13,6 +13,23 @@
   },
   {
     "type": "function",
+    "name": "mintById",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "name": "modelId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "function",
     "name": "mintImageNFT",
     "stateMutability": "nonpayable",
     "inputs": [

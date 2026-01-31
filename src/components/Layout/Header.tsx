@@ -1,28 +1,35 @@
 import { useState } from 'react'
-import { Menu, X, Image, Sparkles, ArrowLeftRight, Waves } from 'lucide-react'
+import { Menu, X, Image, Sparkles, ArrowLeftRight, Waves, Home } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useAccount } from 'wagmi'
 import { ConnectButton } from '@/components/Web3/ConnectButton'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { isConnected } = useAccount()
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
+        {/* Logo / Brand - clicável -> Home */}
+        <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
           <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold">
             A
           </div>
           <span className="text-xl font-bold">Arc Network</span>
-        </div>
+        </Link>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Mint NFTs Button */}
+          {/* Home */}
+          <Link
+            to="/"
+            className="flex items-center gap-1 px-4 py-2 rounded-xl border border-slate-700/50 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-800/70 hover:border-cyan-500/30 transition-all text-sm font-medium"
+          >
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+
+          {/* Mint NFTs */}
           <Link
             to="/mint"
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all text-sm shadow-lg shadow-cyan-500/25"
@@ -31,7 +38,7 @@ export function Header() {
             <span>Mint NFTs</span>
           </Link>
 
-          {/* Swap Button */}
+          {/* Swap */}
           <Link
             to="/swap"
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all text-sm"
@@ -40,7 +47,7 @@ export function Header() {
             <span>Swap</span>
           </Link>
 
-          {/* Pools Button */}
+          {/* Pools */}
           <Link
             to="/pools"
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all text-sm"
@@ -49,17 +56,14 @@ export function Header() {
             <span>Pools</span>
           </Link>
 
-
-          {/* My NFTs Link (only when connected) */}
-          {isConnected && (
-            <Link
-              to="/my-nfts"
-              className="flex items-center gap-1 px-4 py-2 rounded-xl border border-slate-700/50 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-800/70 hover:border-cyan-500/30 transition-all text-sm font-medium"
-            >
-              <Image className="h-4 w-4" />
-              <span>My NFTs</span>
-            </Link>
-          )}
+          {/* My NFTs - visível em todas as páginas */}
+          <Link
+            to="/my-nfts"
+            className="flex items-center gap-1 px-4 py-2 rounded-xl border border-slate-700/50 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-800/70 hover:border-cyan-500/30 transition-all text-sm font-medium"
+          >
+            <Image className="h-4 w-4" />
+            <span>My NFTs</span>
+          </Link>
         </div>
 
         {/* Connect Button */}
@@ -90,52 +94,36 @@ export function Header() {
             className="border-t border-slate-800 bg-slate-950 md:hidden"
           >
             <div className="px-4 py-4 space-y-4">
-              {/* Primary Actions */}
               <div className="space-y-2">
-                <Link
-                  to="/mint"
-                  className="block w-full text-center px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+                <Link to="/" className="block w-full text-center px-4 py-2 rounded-xl border border-slate-700/50 bg-slate-800/50 text-slate-300 hover:text-white transition-all font-medium" onClick={() => setMobileMenuOpen(false)}>
+                  <div className="flex items-center justify-center gap-2">
+                    <Home className="h-4 w-4" />
+                    <span>Home</span>
+                  </div>
+                </Link>
+                <Link to="/mint" className="block w-full text-center px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all" onClick={() => setMobileMenuOpen(false)}>
                   <div className="flex items-center justify-center gap-2">
                     <Sparkles className="h-4 w-4" />
                     <span>Mint NFTs</span>
                   </div>
                 </Link>
-                <Link
-                  to="/swap"
-                  className="block w-full text-center px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+                <Link to="/swap" className="block w-full text-center px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all" onClick={() => setMobileMenuOpen(false)}>
                   <div className="flex items-center justify-center gap-2">
                     <ArrowLeftRight className="h-4 w-4" />
                     <span>Swap</span>
                   </div>
                 </Link>
-                <Link
-                  to="/pools"
-                  className="block w-full text-center px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+                <Link to="/pools" className="block w-full text-center px-4 py-2 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500/20 transition-all" onClick={() => setMobileMenuOpen(false)}>
                   <div className="flex items-center justify-center gap-2">
                     <Waves className="h-4 w-4" />
                     <span>Pools</span>
                   </div>
                 </Link>
-              </div>
-
-
-              {/* My NFTs (only when connected) */}
-              {isConnected && (
-                <Link
-                  to="/my-nfts"
-                  className="block py-2 text-slate-300 hover:text-white transition-colors flex items-center gap-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+                <Link to="/my-nfts" className="block w-full text-center py-2 text-slate-300 hover:text-white transition-colors flex items-center justify-center gap-2 font-medium" onClick={() => setMobileMenuOpen(false)}>
                   <Image className="h-4 w-4" />
                   <span>My NFTs</span>
                 </Link>
-              )}
+              </div>
 
               {/* Connect Button */}
               <div className="pt-4 border-t border-slate-800">

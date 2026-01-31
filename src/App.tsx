@@ -5,12 +5,11 @@ import { Hero } from '@/components/Hero'
 import { NetworkStats } from '@/components/Stats'
 import { WhyArc } from '@/components/Comparison'
 import { MintPage } from '@/components/Mint/MintPage'
+import { ArcCollectionGallery } from '@/components/ArcCollectionGallery'
 import { SwapPage } from '@/pages/SwapPage'
 import { PoolsPage } from '@/pages/PoolsPage'
 import { MyNFTsPage } from '@/pages/MyNFTsPage'
-import { CONTRACT_ADDRESSES } from '@/config/contracts'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { getAddress } from 'ethers'
 
 function HomePage() {
   try {
@@ -79,60 +78,71 @@ function HomePage() {
 }
 
 function MintPageWrapper() {
-  // Get contract address - try VITE_ARC_COLLECTION_ADDRESS first, then fallback to VITE_GIFT_CARD_NFT_ADDRESS
-  // Safe access - never throws
-  let arcCollectionEnv: string | undefined = undefined
   try {
-    arcCollectionEnv = import.meta.env.VITE_ARC_COLLECTION_ADDRESS
-  } catch {
-    // Ignore - env var may not exist
-  }
-  
-  const giftCardNFT = CONTRACT_ADDRESSES.GIFT_CARD_NFT
-  
-  let contractAddress: `0x${string}` | undefined = undefined
-  
-  // Check if VITE_ARC_COLLECTION_ADDRESS is valid (not placeholder)
-  if (arcCollectionEnv && 
-      typeof arcCollectionEnv === 'string' &&
-      arcCollectionEnv.trim() !== '' &&
-      !arcCollectionEnv.includes('SEU_CONTRATO') &&
-      !arcCollectionEnv.includes('YOUR_CONTRACT') &&
-      /^0x[a-fA-F0-9]{40}$/i.test(arcCollectionEnv.trim())) {
-    try {
-      // Convert to lowercase first, then apply checksum (EIP-55)
-      const normalized = arcCollectionEnv.trim().toLowerCase()
-      contractAddress = getAddress(normalized) as `0x${string}`
-    } catch (error) {
-      console.warn('Invalid address format:', error)
-      // Continue - don't break render
-    }
-  } 
-  // Use VITE_GIFT_CARD_NFT_ADDRESS if available and valid (already in checksum from CONTRACT_ADDRESSES)
-  else if (giftCardNFT && 
-           giftCardNFT !== '' && 
-           giftCardNFT !== '0x0000000000000000000000000000000000000000' &&
-           /^0x[a-fA-F0-9]{40}$/i.test(giftCardNFT)) {
-    contractAddress = giftCardNFT as `0x${string}`
-  }
-  
-  return (
-    <>
-      <div className="py-8 px-4 border-b border-slate-800">
-        <div className="max-w-6xl mx-auto">
-          <Link
-            to="/"
-            className="text-cyan-400 hover:text-cyan-300 transition-colors"
+    return (
+      <>
+        <div className="py-8 px-4 border-b border-slate-800">
+          <div className="max-w-6xl mx-auto">
+            <Link to="/" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+        <MintPage />
+      </>
+    )
+  } catch (error) {
+    console.error('MintPageWrapper error:', error)
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Error loading mint page</h1>
+          <p className="text-slate-400 mb-6">{String(error)}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-semibold transition-colors"
           >
-            ← Back to Home
-          </Link>
+            Reload page
+          </button>
         </div>
       </div>
-      <MintPage 
-        contractAddress={contractAddress}
-      />
-    </>
-  )
+    )
+  }
+}
+
+function MintGalleryWrapper() {
+  try {
+    return (
+      <>
+        <div className="py-8 px-4 border-b border-slate-800">
+          <div className="max-w-6xl mx-auto">
+            <Link to="/" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto py-8 px-4">
+          <ArcCollectionGallery />
+        </div>
+      </>
+    )
+  } catch (error) {
+    console.error('MintGalleryWrapper error:', error)
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Error loading mint page</h1>
+          <p className="text-slate-400 mb-6">{String(error)}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-semibold transition-colors"
+          >
+            Reload page
+          </button>
+        </div>
+      </div>
+    )
+  }
 }
 
 function App() {
@@ -151,6 +161,14 @@ function App() {
             />
             <Route 
               path="/mint" 
+              element={
+                <ErrorBoundary>
+                  <MintGalleryWrapper />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/mint-legacy" 
               element={
                 <ErrorBoundary>
                   <MintPageWrapper />

@@ -1,4 +1,3 @@
-import React from "react";
 
 // imagens (seu caminho real)
 import visionaryImg from "@/assets/NFTs/fajucar-1.png";

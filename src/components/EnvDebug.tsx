@@ -1,66 +1,108 @@
-import { CONTRACT_ADDRESSES } from '../config/contracts';
+import { useEffect } from 'react';
 
 export function EnvDebug() {
   // Only show in development
   if (import.meta.env.PROD) return null;
 
+  // Environment variables to check
+  const envVars = {
+    VITE_FAJUCAR_COLLECTION_ADDRESS: import.meta.env.VITE_FAJUCAR_COLLECTION_ADDRESS,
+    VITE_ENABLE_FAJUCAR_NFTS: import.meta.env.VITE_ENABLE_FAJUCAR_NFTS,
+    VITE_NETWORK_NAME: import.meta.env.VITE_NETWORK_NAME,
+  };
+
+  // Log to console on mount and when values change
+  useEffect(() => {
+    console.group('🔍 EnvDebug: Environment Variables');
+    console.log('=====================================');
+    
+    Object.entries(envVars).forEach(([key, value]) => {
+      const status = value ? '✅ DEFINED' : '❌ UNDEFINED';
+      const displayValue = value || 'undefined';
+      
+      console.log(`${key}:`, displayValue, `(${status})`);
+    });
+    
+    console.log('=====================================');
+    console.groupEnd();
+  }, []);
+
+  // Helper to check if value is defined
+  const isDefined = (value: string | undefined): boolean => {
+    return value !== undefined && value !== null && value !== '';
+  };
+
+  // Helper to get status color
+  const getStatusColor = (value: string | undefined): string => {
+    return isDefined(value) ? 'text-green-400' : 'text-red-400';
+  };
+
+  // Helper to get status text
+  const getStatusText = (value: string | undefined): string => {
+    return isDefined(value) ? 'DEFINED' : 'UNDEFINED';
+  };
+
   return (
-    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-4 text-xs font-mono">
-      <h3 className="font-bold mb-2">🔍 Debug: Environment Variables</h3>
-      <div className="space-y-1">
-        <div>
-          <span className="text-gray-600">VITE_MOCK_USDC_ADDRESS:</span>{' '}
-          <span className={import.meta.env.VITE_MOCK_USDC_ADDRESS ? 'text-green-600' : 'text-red-600'}>
-            {import.meta.env.VITE_MOCK_USDC_ADDRESS || 'NOT DEFINED'}
-          </span>
+    <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4 mb-4 text-xs font-mono">
+      <h3 className="font-bold mb-3 text-white">🔍 Debug: Environment Variables</h3>
+      
+      <div className="space-y-2">
+        {/* Fajucar Collection Address */}
+        <div className="space-y-1.5">
+          <h4 className="font-semibold text-slate-300 mb-1">Fajucar Collection:</h4>
+          
+          <div className="pl-2">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">VITE_FAJUCAR_COLLECTION_ADDRESS:</span>
+              <span className={getStatusColor(envVars.VITE_FAJUCAR_COLLECTION_ADDRESS)}>
+                {envVars.VITE_FAJUCAR_COLLECTION_ADDRESS || 'UNDEFINED'}
+              </span>
+              <span className={`text-xs ${getStatusColor(envVars.VITE_FAJUCAR_COLLECTION_ADDRESS)}`}>
+                ({getStatusText(envVars.VITE_FAJUCAR_COLLECTION_ADDRESS)})
+              </span>
+            </div>
+          </div>
         </div>
-        <div>
-          <span className="text-gray-600">VITE_GIFT_CARD_NFT_ADDRESS:</span>{' '}
-          <span className={import.meta.env.VITE_GIFT_CARD_NFT_ADDRESS ? 'text-green-600' : 'text-red-600'}>
-            {import.meta.env.VITE_GIFT_CARD_NFT_ADDRESS || 'NOT DEFINED'}
-          </span>
-        </div>
-        <div>
-          <span className="text-gray-600">VITE_GIFT_CARD_MINTER_ADDRESS:</span>{' '}
-          <span className={import.meta.env.VITE_GIFT_CARD_MINTER_ADDRESS ? 'text-green-600' : 'text-red-600'}>
-            {import.meta.env.VITE_GIFT_CARD_MINTER_ADDRESS || 'NOT DEFINED'}
-          </span>
+
+        {/* Configuration Flags */}
+        <div className="mt-3 pt-3 border-t border-slate-700/50 space-y-1.5">
+          <h4 className="font-semibold text-slate-300 mb-1">Configuration:</h4>
+          
+          <div className="pl-2">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">VITE_ENABLE_FAJUCAR_NFTS:</span>
+              <span className={getStatusColor(envVars.VITE_ENABLE_FAJUCAR_NFTS)}>
+                {envVars.VITE_ENABLE_FAJUCAR_NFTS || 'UNDEFINED'}
+              </span>
+              <span className={`text-xs ${getStatusColor(envVars.VITE_ENABLE_FAJUCAR_NFTS)}`}>
+                ({getStatusText(envVars.VITE_ENABLE_FAJUCAR_NFTS)})
+              </span>
+            </div>
+          </div>
+          
+          <div className="pl-2">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">VITE_NETWORK_NAME:</span>
+              <span className={getStatusColor(envVars.VITE_NETWORK_NAME)}>
+                {envVars.VITE_NETWORK_NAME || 'UNDEFINED'}
+              </span>
+              <span className={`text-xs ${getStatusColor(envVars.VITE_NETWORK_NAME)}`}>
+                ({getStatusText(envVars.VITE_NETWORK_NAME)})
+              </span>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="mt-3 pt-3 border-t border-gray-300">
-        <h4 className="font-bold mb-1">📋 Parsed Addresses:</h4>
-        <div className="space-y-1">
-          <div>
-            MOCK_USDC: <span className={CONTRACT_ADDRESSES.MOCK_USDC ? 'text-green-600' : 'text-red-600'}>
-              {CONTRACT_ADDRESSES.MOCK_USDC || 'EMPTY'}
-            </span>
-          </div>
-          <div>
-            GIFT_CARD_NFT: <span className={CONTRACT_ADDRESSES.GIFT_CARD_NFT ? 'text-green-600' : 'text-red-600'}>
-              {CONTRACT_ADDRESSES.GIFT_CARD_NFT || 'EMPTY'}
-            </span>
-          </div>
-          <div>
-            GIFT_CARD_MINTER: <span className={CONTRACT_ADDRESSES.GIFT_CARD_MINTER ? 'text-green-600' : 'text-red-600'}>
-              {CONTRACT_ADDRESSES.GIFT_CARD_MINTER || 'EMPTY'}
-            </span>
-          </div>
-        </div>
-      </div>
-      {(!CONTRACT_ADDRESSES.MOCK_USDC || !CONTRACT_ADDRESSES.GIFT_CARD_NFT || !CONTRACT_ADDRESSES.GIFT_CARD_MINTER) && (
-        <div className="mt-3 pt-3 border-t border-red-300 bg-red-50 p-2 rounded">
-          <p className="text-red-800 font-semibold text-sm mb-2">⚠️ Variables not loaded!</p>
-          <div className="text-red-700 text-xs space-y-2">
-            <p className="font-semibold">Solution:</p>
-            <ol className="list-decimal list-inside ml-2 space-y-1">
-              <li>In the terminal where the server is running, press <strong>Ctrl+C</strong> to stop</li>
-              <li>Run: <code className="bg-red-100 px-1 rounded">cd frontend && npm run fix:env</code></li>
-              <li>Then run: <code className="bg-red-100 px-1 rounded">npm run dev</code></li>
-              <li>Reload this page (F5)</li>
-            </ol>
-            <p className="mt-2 text-xs italic">
-              ⚠️ Vite only loads environment variables when the server is STARTED. 
-              If you created/modified the .env file while the server was running, you need to restart!
+
+      {/* Warning if any required variables are undefined */}
+      {Object.values(envVars).some(value => !isDefined(value)) && (
+        <div className="mt-4 pt-3 border-t border-amber-500/30 bg-amber-900/20 p-3 rounded">
+          <p className="text-amber-400 font-semibold text-sm mb-2">⚠️ Some variables are undefined!</p>
+          <div className="text-amber-300 text-xs space-y-1">
+            <p>Check your <code className="bg-amber-900/50 px-1 rounded">.env</code> file and ensure all required variables are set.</p>
+            <p className="mt-2 italic">
+              💡 Vite only loads environment variables when the server is STARTED. 
+              If you modified the .env file while the server was running, restart the dev server.
             </p>
           </div>
         </div>

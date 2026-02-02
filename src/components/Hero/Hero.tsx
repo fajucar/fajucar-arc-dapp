@@ -93,7 +93,7 @@ export function Hero({}: HeroProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45 }}
-              className="grid grid-cols-4 gap-4"
+              className="grid grid-cols-4 gap-2.5"
             >
               <motion.a
                 href={CONSTANTS.LINKS.docs}
@@ -104,16 +104,16 @@ export function Hero({}: HeroProps) {
                 transition={{ delay: 0.5 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-5 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-lg border border-cyan-500/15 bg-slate-900/25 backdrop-blur-xl p-2.5 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/25"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[120px]">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
-                    <h3 className="text-white font-semibold tracking-wide">Documentation</h3>
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[65px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-pulse" />
+                    <h3 className="text-white text-sm font-semibold tracking-tight">Documentation</h3>
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-200/85">Learn about Arc Network</p>
-                  <ExternalLink className="h-4 w-4 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors" />
+                  <p className="text-xs leading-relaxed text-slate-300/70">Learn about Arc Network</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
                 </div>
               </motion.a>
 
@@ -126,16 +126,16 @@ export function Hero({}: HeroProps) {
                 transition={{ delay: 0.55 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-5 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-900/30 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/30"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[120px]">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
-                    <h3 className="text-white font-semibold tracking-wide">Explorer</h3>
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[90px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.5)] animate-pulse" />
+                    <h3 className="text-white text-sm font-semibold tracking-tight">Explorer</h3>
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-200/85">Browse transactions</p>
-                  <ExternalLink className="h-4 w-4 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors" />
+                  <p className="text-xs leading-relaxed text-slate-300/70">Browse transactions</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
                 </div>
               </motion.a>
 
@@ -148,16 +148,16 @@ export function Hero({}: HeroProps) {
                 transition={{ delay: 0.6 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-5 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-900/30 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/30"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[120px]">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
-                    <h3 className="text-white font-semibold tracking-wide">Faucet</h3>
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[90px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.5)] animate-pulse" />
+                    <h3 className="text-white text-sm font-semibold tracking-tight">Faucet</h3>
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-200/85">Get test tokens</p>
-                  <ExternalLink className="h-4 w-4 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors" />
+                  <p className="text-xs leading-relaxed text-slate-300/70">Get test tokens</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
                 </div>
               </motion.a>
 
@@ -170,16 +170,16 @@ export function Hero({}: HeroProps) {
                 transition={{ delay: 0.65 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-5 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-900/30 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/30"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[120px]">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
-                    <h3 className="text-white font-semibold tracking-wide">GitHub</h3>
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[90px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.5)] animate-pulse" />
+                    <h3 className="text-white text-sm font-semibold tracking-tight">GitHub</h3>
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-200/85">View source code</p>
-                  <ExternalLink className="h-4 w-4 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors" />
+                  <p className="text-xs leading-relaxed text-slate-300/70">View source code</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
                 </div>
               </motion.a>
             </motion.div>
@@ -216,7 +216,7 @@ export function Hero({}: HeroProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45 }}
-              className="grid grid-cols-2 gap-4"
+              className="grid grid-cols-2 gap-2.5"
             >
               <motion.a
               href={CONSTANTS.LINKS.docs}
@@ -225,18 +225,18 @@ export function Hero({}: HeroProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-                whileHover={{ y: -3, scale: 1.02 }}
+                whileHover={{ y: -2, scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-lg border border-cyan-500/15 bg-slate-900/25 backdrop-blur-xl p-2.5 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/25"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
-                  <h3 className="text-white font-semibold text-sm">Documentation</h3>
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[60px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-pulse" />
+                  <h3 className="text-white text-sm font-semibold tracking-tight">Documentation</h3>
                 </div>
-                <p className="text-xs leading-relaxed text-slate-200/85">Learn about Arc Network</p>
-                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                <p className="text-xs leading-relaxed text-slate-300/70">Learn about Arc Network</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
               </div>
             </motion.a>
 
@@ -249,16 +249,16 @@ export function Hero({}: HeroProps) {
               transition={{ delay: 0.55 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-lg border border-cyan-500/15 bg-slate-900/25 backdrop-blur-xl p-2.5 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/25"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
-                  <h3 className="text-white font-semibold text-sm">Explorer</h3>
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[60px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-pulse" />
+                  <h3 className="text-white text-sm font-semibold tracking-tight">Explorer</h3>
                 </div>
-                <p className="text-xs leading-relaxed text-slate-200/85">Browse transactions</p>
-                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                <p className="text-xs leading-relaxed text-slate-300/70">Browse transactions</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
               </div>
             </motion.a>
 
@@ -271,16 +271,16 @@ export function Hero({}: HeroProps) {
               transition={{ delay: 0.6 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-lg border border-cyan-500/15 bg-slate-900/25 backdrop-blur-xl p-2.5 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/25"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
-                  <h3 className="text-white font-semibold text-sm">Faucet</h3>
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[60px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-pulse" />
+                  <h3 className="text-white text-sm font-semibold tracking-tight">Faucet</h3>
                 </div>
-                <p className="text-xs leading-relaxed text-slate-200/85">Get test tokens</p>
-                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                <p className="text-xs leading-relaxed text-slate-300/70">Get test tokens</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
               </div>
             </motion.a>
 
@@ -293,16 +293,16 @@ export function Hero({}: HeroProps) {
               transition={{ delay: 0.65 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-lg border border-cyan-500/15 bg-slate-900/25 backdrop-blur-xl p-2.5 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/25"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
-                  <h3 className="text-white font-semibold text-sm">GitHub</h3>
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[60px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-pulse" />
+                  <h3 className="text-white text-sm font-semibold tracking-tight">GitHub</h3>
                 </div>
-                <p className="text-xs leading-relaxed text-slate-200/85">View source code</p>
-                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                <p className="text-xs leading-relaxed text-slate-300/70">View source code</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
               </div>
             </motion.a>
             </motion.div>
@@ -332,7 +332,7 @@ export function Hero({}: HeroProps) {
             </motion.div>
 
             {/* Cards em 2 colunas se couber, senão 1 */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <motion.a
                 href={CONSTANTS.LINKS.docs}
                 target="_blank"
@@ -342,16 +342,16 @@ export function Hero({}: HeroProps) {
                 transition={{ delay: 0.6 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-900/30 backdrop-blur-xl p-3.5 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/30"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[85px]">
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
                     <h3 className="text-white font-semibold text-sm">Documentation</h3>
                   </div>
-                  <p className="text-xs leading-relaxed text-slate-200/85">Learn about Arc Network</p>
-                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                  <p className="text-xs leading-relaxed text-slate-300/70">Learn about Arc Network</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
                 </div>
               </motion.a>
 
@@ -364,16 +364,16 @@ export function Hero({}: HeroProps) {
                 transition={{ delay: 0.65 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-900/30 backdrop-blur-xl p-3.5 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/30"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[85px]">
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
                     <h3 className="text-white font-semibold text-sm">Explorer</h3>
                   </div>
-                  <p className="text-xs leading-relaxed text-slate-200/85">Browse transactions</p>
-                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                  <p className="text-xs leading-relaxed text-slate-300/70">Browse transactions</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
                 </div>
               </motion.a>
 
@@ -386,16 +386,16 @@ export function Hero({}: HeroProps) {
                 transition={{ delay: 0.7 }}
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.99 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 motion-safe:transition-all motion-safe:duration-[250ms] motion-safe:ease-out shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] motion-safe:hover:border-cyan-500/40 motion-safe:hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-900/30 backdrop-blur-xl p-3.5 motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out hover:border-cyan-500/30"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
-                <div className="relative flex flex-col gap-2 items-center text-center justify-center min-h-[100px]">
+                <div className="relative flex flex-col gap-1.5 items-center text-center justify-center min-h-[85px]">
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
                     <h3 className="text-white font-semibold text-sm">Faucet</h3>
                   </div>
-                  <p className="text-xs leading-relaxed text-slate-200/85">Get test tokens</p>
-                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                  <p className="text-xs leading-relaxed text-slate-300/70">Get test tokens</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
                 </div>
               </motion.a>
 
@@ -407,7 +407,7 @@ export function Hero({}: HeroProps) {
                   animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.75 }}
                 whileHover={{ y: -2, scale: 1.01 }}
-                className="group relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/35 backdrop-blur-xl p-4 transition-all duration-300 shadow-[0_0_0_1px_rgba(34,211,238,0.10),0_20px_80px_rgba(0,0,0,0.45)] hover:border-cyan-500/40 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.20),0_20px_80px_rgba(0,0,0,0.45)]"
+                className="group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-900/30 backdrop-blur-xl p-3.5 transition-all duration-200 hover:border-cyan-500/30"
                 >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 motion-safe:group-hover:opacity-100 motion-safe:transition-opacity" />
                 <div className="relative flex flex-col gap-2 items-start text-left">
@@ -415,8 +415,8 @@ export function Hero({}: HeroProps) {
                     <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.65)] animate-pulse" />
                     <h3 className="text-white font-semibold text-sm">GitHub</h3>
                   </div>
-                  <p className="text-xs leading-relaxed text-slate-200/85">View source code</p>
-                  <ExternalLink className="h-3 w-3 text-slate-400 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mx-auto" />
+                  <p className="text-xs leading-relaxed text-slate-300/70">View source code</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 motion-safe:group-hover:text-cyan-400 motion-safe:transition-colors mt-0.5" />
                 </div>
               </motion.a>
             </div>

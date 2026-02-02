@@ -41,10 +41,10 @@ function HomePage() {
         </ErrorBoundary>
 
         <ErrorBoundary>
-          <section className="py-16 px-4 bg-slate-950">
-            <div className="max-w-6xl mx-auto mb-6 text-center">
-              <h3 className="text-2xl font-bold mb-2">Network Statistics</h3>
-              <p className="text-sm text-slate-400">
+          <section className="py-8 px-4 bg-slate-950">
+            <div className="max-w-6xl mx-auto mb-3 text-center">
+              <h3 className="text-lg font-semibold tracking-tight mb-1">Network Statistics</h3>
+              <p className="text-[10px] text-slate-400">
                 Real-time data from Arc Testnet RPC. Click on cards to verify on explorer.
               </p>
             </div>

@@ -1,3 +1,4 @@
-export { MintPage } from './MintPage'
+import MintPage from './MintPage'
+export { MintPage }
 
 

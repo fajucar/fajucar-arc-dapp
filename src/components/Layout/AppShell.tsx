@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils'
 interface AppShellProps {
   title?: string
   subtitle?: string
+  /** Override title style (e.g. smaller, modern font) */
+  titleClassName?: string
   children: ReactNode
   className?: string
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '6xl' | 'full'
@@ -22,6 +24,7 @@ const maxWidthClasses = {
 export function AppShell({
   title,
   subtitle,
+  titleClassName,
   children,
   className,
   maxWidth = '6xl',
@@ -30,12 +33,18 @@ export function AppShell({
     <main className={cn('mx-auto w-full py-8 px-4', maxWidthClasses[maxWidth])}>
       <div className="bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-3xl p-6 md:p-8 shadow-[0_8px_32px_rgba(6,182,212,0.1)]">
         {title && (
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+          <div className="mb-6">
+            <h1 className={cn(
+              'text-white mb-2',
+              titleClassName ?? 'text-4xl md:text-5xl font-bold'
+            )}>
               {title}
             </h1>
             {subtitle && (
-              <p className="text-lg text-slate-400 max-w-2xl">
+              <p className={cn(
+                'text-slate-400 max-w-2xl',
+                titleClassName ? 'text-sm' : 'text-lg'
+              )}>
                 {subtitle}
               </p>
             )}

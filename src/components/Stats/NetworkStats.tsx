@@ -10,11 +10,11 @@ export function NetworkStats() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-6xl mx-auto">
         {[...Array(4)].map((_, i) => (
           <div 
             key={i}
-            className="h-32 rounded-2xl bg-slate-800/50 animate-pulse"
+            className="h-16 rounded-lg bg-slate-800/50 animate-pulse"
           />
         ))}
       </div>
@@ -22,7 +22,7 @@ export function NetworkStats() {
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 max-w-6xl mx-auto">
       <StatCard
         label="Transactions/sec"
         value={stats?.tps || 0}

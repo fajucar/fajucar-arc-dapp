@@ -1,153 +1,181 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAccount, usePublicClient, useWalletClient } from "wagmi";
-import { decodeEventLog } from "viem";
+import { useEffect, useState } from "react";
+import { useAccount, usePublicClient } from "wagmi";
 import toast from "react-hot-toast";
 
 import { FAJUCAR_COLLECTION_ADDRESS } from "../../config/contracts";
-import ArcNftAbi from "../../abis/FajuARC.json";
+import FajucarCollectionAbi from "../../abis/FajucarCollection.json";
 
-const FIXED_TOKEN_URI =
+const FALLBACK_TOKEN_URI =
   "ipfs://bafkreicisecsndv777lv3hfafh3kfgvxf25al2mf7rifrqbdbbjqvcrs6u";
 
-const TRANSFER_EVENT_ABI = {
-  type: "event",
-  name: "Transfer",
-  inputs: [
-    { name: "from", type: "address", indexed: true },
-    { name: "to", type: "address", indexed: true },
-    { name: "tokenId", type: "uint256", indexed: true },
-  ],
-} as const;
+const MAX_TOKEN_SCAN_DEFAULT = 200;
+const SCAN_CONCURRENCY = 10;
 
-function extractTokenIdFromReceipt(
-  receipt: { status: string; logs: { address: string; topics: `0x${string}`[]; data: `0x${string}` }[] },
-  nftContractAddress: string,
-  ownerAddress: string
-): string | null {
-  if (receipt.status !== "success" || !receipt.logs?.length) return null;
-  const nftAddressLower = nftContractAddress.toLowerCase();
-  const ownerLower = ownerAddress.toLowerCase();
-  for (const log of receipt.logs) {
-    if (log.address?.toLowerCase() !== nftAddressLower) continue;
-    try {
-      const decoded = decodeEventLog({
-        abi: [TRANSFER_EVENT_ABI],
-        data: log.data,
-        topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
-        strict: false,
-      });
-      if (decoded.eventName === "Transfer" && decoded.args) {
-        const to = (decoded.args as { to?: string }).to;
-        if (to?.toLowerCase() === ownerLower) {
-          const tokenId = (decoded.args as { tokenId?: bigint }).tokenId;
-          if (tokenId !== undefined) return tokenId.toString();
-        }
-      }
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
+type NFTItem = {
+  tokenId: number;
+  tokenUri: string;
+};
 
-export function MintPage() {
-  const navigate = useNavigate();
-  const { address, isConnected } = useAccount();
+function MintPage() {
+  const { address } = useAccount();
   const publicClient = usePublicClient();
-  const { data: walletClient } = useWalletClient();
 
-  const [isMinting, setIsMinting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [lastTxHash, setLastTxHash] = useState<string>("");
-  const [lastTxStatus, setLastTxStatus] = useState<"pending" | "success" | "error">("pending");
+  const [loading, setLoading] = useState(false);
+  const [nfts, setNfts] = useState<NFTItem[]>([]);
+  const [maxScan] = useState(MAX_TOKEN_SCAN_DEFAULT);
 
-  async function handleMint() {
-    if (!isConnected || !address) {
-      setMessage("Conecte sua carteira.");
-      return;
-    }
-    if (!walletClient || !publicClient) {
-      setMessage("Carteira não pronta.");
-      return;
-    }
-    const contractAddress = FAJUCAR_COLLECTION_ADDRESS;
-    if (!contractAddress) {
-      setMessage("Contrato não configurado.");
-      return;
-    }
+  async function loadNFTs() {
+    if (!address || !publicClient) return;
+    if (!FAJUCAR_COLLECTION_ADDRESS) return;
 
-    setIsMinting(true);
-    setMessage("Mintando...");
+    setLoading(true);
+    setNfts([]);
 
+    const contractAddress = FAJUCAR_COLLECTION_ADDRESS as `0x${string}`;
     try {
-      const hash = await walletClient.writeContract({
+      // 1) balanceOf
+      const balance = (await publicClient.readContract({
         address: contractAddress,
-        abi: ArcNftAbi as never,
-        functionName: "mintImageNFT",
-        args: [FIXED_TOKEN_URI],
-      });
-      const shortHash = `${hash.slice(0, 6)}...${hash.slice(-4)}`;
-      setLastTxHash(shortHash);
-      setLastTxStatus("pending");
-      setMessage("Tx enviada. Aguardando confirmação...");
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        abi: FajucarCollectionAbi,
+        functionName: "balanceOf",
+        args: [address],
+      })) as bigint;
 
-      if (receipt.status === "success") {
-        setLastTxStatus("success");
-        const tokenId = extractTokenIdFromReceipt(
-          receipt as { status: string; logs: { address: string; topics: `0x${string}`[]; data: `0x${string}` }[] },
-          contractAddress,
-          address
-        );
-        toast.success("Mint confirmado! Abrindo My NFTs…");
-        const params = new URLSearchParams({ owner: address });
-        if (tokenId) params.set("highlight", tokenId);
-        navigate(`/my-nfts?${params.toString()}`);
-      } else {
-        setLastTxStatus("error");
-        setMessage("Transação falhou.");
-        toast.error("Transação falhou.");
+      if (balance === 0n) {
+        setNfts([]);
+        setLoading(false);
+        return;
       }
-    } catch (e) {
-      setLastTxStatus("error");
-      const msg = e instanceof Error ? e.message : String(e);
-      setMessage(`Erro: ${msg}`);
-      toast.error(msg);
+
+      let tokenIds: number[] = [];
+
+      // 2) Try ERC721Enumerable
+      const hasEnumerable = FajucarCollectionAbi.some(
+        (item: any) => item.name === "tokenOfOwnerByIndex"
+      );
+
+      if (hasEnumerable) {
+        for (let i = 0n; i < balance; i++) {
+          const tokenId = (await publicClient.readContract({
+            address: contractAddress,
+            abi: FajucarCollectionAbi,
+            functionName: "tokenOfOwnerByIndex",
+            args: [address, i],
+          })) as bigint;
+
+          tokenIds.push(Number(tokenId));
+        }
+      } else {
+        // 3) Fallback ownerOf scan
+        const found: number[] = [];
+        let index = 1;
+
+        async function worker() {
+          while (index <= maxScan) {
+            const current = index++;
+            try {
+              const owner = (await publicClient!.readContract({
+                address: contractAddress,
+                abi: FajucarCollectionAbi,
+                functionName: "ownerOf",
+                args: [BigInt(current)],
+              })) as string;
+
+              if (owner.toLowerCase() === address!.toLowerCase()) {
+                found.push(current);
+              }
+            } catch {
+              // token does not exist → ignore
+            }
+          }
+        }
+
+        await Promise.all(
+          Array.from({ length: SCAN_CONCURRENCY }).map(worker)
+        );
+
+        tokenIds = found;
+      }
+
+      // 4) Resolve tokenURI
+      const items: NFTItem[] = [];
+
+      for (const tokenId of tokenIds) {
+        let tokenUri = FALLBACK_TOKEN_URI;
+        try {
+          const uri = (await publicClient.readContract({
+            address: contractAddress,
+            abi: FajucarCollectionAbi,
+            functionName: "tokenURI",
+            args: [BigInt(tokenId)],
+          })) as string;
+          tokenUri = uri || FALLBACK_TOKEN_URI;
+        } catch {
+          tokenUri = FALLBACK_TOKEN_URI;
+        }
+
+        items.push({ tokenId, tokenUri });
+      }
+
+      setNfts(items);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao carregar NFTs");
     } finally {
-      setIsMinting(false);
+      setLoading(false);
     }
   }
+
+  useEffect(() => {
+    loadNFTs();
+  }, [address]);
 
   return (
-    <div className="max-w-5xl mx-auto p-6 text-white">
-      <h1 className="text-4xl font-bold">Mint</h1>
-      <p className="text-white/60 mt-1">
-        {address ? `Wallet: ${address.slice(0, 6)}...${address.slice(-4)}` : "Conecte sua carteira"}
+    <div className="max-w-6xl mx-auto p-6 text-white">
+      <h1 className="text-3xl font-bold mb-4">My NFTs</h1>
+
+      <p className="text-white/60 mb-4">
+        Owner: {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "-"}
       </p>
 
-      <div className="mt-6">
-        <button
-          type="button"
-          onClick={handleMint}
-          disabled={isMinting || !isConnected}
-          className="px-5 py-3 rounded-xl bg-cyan-500/30 hover:bg-cyan-500/40 disabled:opacity-60"
-        >
-          Mint agora
-        </button>
-      </div>
+      <button
+        onClick={loadNFTs}
+        disabled={loading}
+        className="mb-6 px-4 py-2 rounded-lg bg-cyan-500/30 hover:bg-cyan-500/40 disabled:opacity-50"
+      >
+        {loading ? "Carregando..." : "Refresh"}
+      </button>
 
-      {lastTxHash && (
-        <p className="mt-2 text-xs text-white/60">
-          Tx: {lastTxHash} | Status: {lastTxStatus}
-        </p>
+      {!loading && nfts.length === 0 && (
+        <div className="mt-10 text-center text-white/70">
+          <p className="text-lg font-semibold">Nenhum NFT encontrado</p>
+          <p className="text-sm mt-2">
+            NFTs são buscados diretamente no contrato, sem depender de logs.
+          </p>
+        </div>
       )}
 
-      {message && (
-        <div className="mt-4 text-sm text-white/80 whitespace-pre-wrap">
-          {message}
+      {nfts.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {nfts.map((nft) => (
+            <div
+              key={nft.tokenId}
+              className="rounded-xl border border-white/10 p-4 bg-white/5"
+            >
+              <img
+                src={nft.tokenUri.replace("ipfs://", "https://ipfs.io/ipfs/")}
+                alt={`NFT ${nft.tokenId}`}
+                className="rounded-lg mb-3"
+              />
+              <p className="text-sm text-white/80">
+                Token ID #{nft.tokenId}
+              </p>
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
+export default MintPage;
+export { MintPage };

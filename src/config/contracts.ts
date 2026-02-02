@@ -1,81 +1,44 @@
-import { getAddress } from 'ethers';
+import { getAddress } from 'viem';
 
 // Contract addresses - Update these after deployment
-// Debug: Log environment variables (remove in production)
 if (import.meta.env.DEV) {
   console.log('🔍 [contracts.ts] Environment Variables:');
-  console.log('  VITE_FAJUCAR_COLLECTION_ADDRESS:', import.meta.env.VITE_FAJUCAR_COLLECTION_ADDRESS || 'UNDEFINED');
+  console.log('  VITE_FAJUCAR_COLLECTION_ADDRESS:', import.meta.env.VITE_FAJUCAR_COLLECTION_ADDRESS ?? 'UNDEFINED');
 }
 
-// Helper function to get address with correct checksum
-// NEVER throws - always returns empty string if invalid
-function getChecksumAddress(address: string | undefined): string {
-  if (!address || typeof address !== 'string' || address.trim() === '') {
-    return '';
-  }
+/**
+ * Read and normalize an address from env. Removes quotes/whitespace, lowercases,
+ * validates 0x + 42 chars, then applies getAddress (checksum). Never call getAddress
+ * on raw env strings (spaces/quotes/mixed-case).
+ */
+function parseEnvAddress(envKey: string): `0x${string}` | '' {
+  const raw = (import.meta.env[envKey] ?? '').toString();
+  const rawTrim = raw.trim().replaceAll('"', '').replaceAll("'", '');
+  const normalize = rawTrim.toLowerCase();
+  if (!normalize.startsWith('0x') || normalize.length !== 42) return '';
   try {
-    // Convert to lowercase first, then getAddress will apply proper checksum
-    const normalized = address.trim().toLowerCase();
-    // Validate it looks like an address before calling getAddress
-    if (!/^0x[a-f0-9]{40}$/i.test(normalized)) {
-      if (import.meta.env.DEV) {
-        console.warn(`Invalid address format (not 40 hex chars): ${address}`);
-      }
-      return '';
-    }
-    return getAddress(normalized); // This converts to EIP-55 checksum format
-  } catch (error) {
-    if (import.meta.env.DEV) {
-      console.warn(`Invalid address format: ${address}`, error);
-    }
-    // Return empty string instead of throwing
-    return '';
-  }
-}
-
-// Safe access to env vars - never throws
-function getEnvVar(key: string): string {
-  try {
-    const value = import.meta.env[key];
-    return typeof value === 'string' ? value : '';
+    return getAddress(normalize) as `0x${string}`;
   } catch {
     return '';
   }
 }
 
+export const GIFT_CARD_MINTER_ADDRESS = parseEnvAddress('VITE_GIFT_CARD_MINTER_ADDRESS');
+export const GIFT_CARD_NFT_ADDRESS = parseEnvAddress('VITE_GIFT_CARD_NFT_ADDRESS');
+export const FAJUCAR_COLLECTION_ADDRESS = parseEnvAddress('VITE_FAJUCAR_COLLECTION_ADDRESS');
+export const MOCK_USDC_ADDRESS = parseEnvAddress('VITE_MOCK_USDC_ADDRESS');
+
 export const CONTRACT_ADDRESSES = {
-  // Update these with your deployed contract addresses
-  // Using getAddress() to ensure proper EIP-55 checksum format
-  // Note: MOCK_USDC is no longer used in v2 (image NFT minter)
-  // NEVER throws - returns empty string if env var is missing or invalid
-  MOCK_USDC: getChecksumAddress(getEnvVar('VITE_MOCK_USDC_ADDRESS')),
-  GIFT_CARD_NFT: getChecksumAddress(getEnvVar('VITE_GIFT_CARD_NFT_ADDRESS')),
-  GIFT_CARD_MINTER: getChecksumAddress(getEnvVar('VITE_GIFT_CARD_MINTER_ADDRESS')),
+  MOCK_USDC: MOCK_USDC_ADDRESS,
+  GIFT_CARD_NFT: GIFT_CARD_NFT_ADDRESS,
+  GIFT_CARD_MINTER: GIFT_CARD_MINTER_ADDRESS,
 };
 
-// Fajucar Collection - Single contract for all NFT models
-// This is the new unified contract address
-export const FAJUCAR_COLLECTION_ADDRESS: `0x${string}` | undefined = (() => {
-  const addr = getChecksumAddress(getEnvVar('VITE_FAJUCAR_COLLECTION_ADDRESS'));
-  if (!addr) {
-    if (import.meta.env.DEV) {
-      console.error('❌ [contracts.ts] VITE_FAJUCAR_COLLECTION_ADDRESS is not configured!');
-      console.error('   Please set VITE_FAJUCAR_COLLECTION_ADDRESS in your .env file');
-    }
-    return undefined;
-  }
-  return addr as `0x${string}`;
-})();
-
-// Validate FAJUCAR_COLLECTION_ADDRESS on module load (in dev mode)
-if (import.meta.env.DEV && !FAJUCAR_COLLECTION_ADDRESS) {
-  console.error('❌ [contracts.ts] FAJUCAR_COLLECTION_ADDRESS is undefined!');
-  console.error('   Mint functionality will not work until VITE_FAJUCAR_COLLECTION_ADDRESS is set');
-}
-
-// Debug: Log parsed addresses
+// Debug: Log parsed addresses (dev only)
 if (import.meta.env.DEV) {
   console.log('📋 [contracts.ts] Parsed Addresses:');
+  console.log('  FAJUCAR_COLLECTION_ADDRESS:', FAJUCAR_COLLECTION_ADDRESS || '(empty)');
+  console.log('  GIFT_CARD_MINTER_ADDRESS:', GIFT_CARD_MINTER_ADDRESS || '(empty)');
   console.log('  CONTRACT_ADDRESSES:', CONTRACT_ADDRESSES);
 }
 

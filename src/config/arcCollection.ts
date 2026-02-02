@@ -64,17 +64,17 @@ export const ARC_COLLECTION: ArcNFTItem[] = [
   },
   {
     id: 2,
-    name: "Arc Builder",
-    description: "A builder creating the future on Arc Network. The Builder represents developers who build innovative dApps on Arc's stable infrastructure.",
+    name: "Arc Guardian",
+    description: "A guardian protecting the Arc ecosystem. The Guardian represents the security and stability that Arc Network provides.",
     image: "/assets/nfts/arc_builder.png",
-    tokenURI: getMetadataURL("arc-builder.json")
+    tokenURI: getMetadataURL("arc-guardian.json")
   },
   {
     id: 3,
-    name: "Arc Guardian",
-    description: "A guardian protecting the Arc ecosystem. The Guardian represents the security and stability that Arc Network provides.",
+    name: "Arc Builder",
+    description: "A builder creating the future on Arc Network. The Builder represents developers who build innovative dApps on Arc's stable infrastructure.",
     image: "/assets/nfts/arc_guardian.png",
-    tokenURI: getMetadataURL("arc-guardian.json")
+    tokenURI: getMetadataURL("arc-builder.json")
   },
   {
     id: 4,

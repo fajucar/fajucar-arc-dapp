@@ -7,19 +7,19 @@ export function testConfig() {
   const issues: string[] = [];
   
   // Check if addresses are set
-  if (!CONTRACT_ADDRESSES.MOCK_USDC || CONTRACT_ADDRESSES.MOCK_USDC === '') {
+  if (!CONTRACT_ADDRESSES.MOCK_USDC) {
     issues.push('❌ VITE_MOCK_USDC_ADDRESS is not set');
   } else {
     console.log('✅ MOCK_USDC_ADDRESS:', CONTRACT_ADDRESSES.MOCK_USDC);
   }
   
-  if (!CONTRACT_ADDRESSES.GIFT_CARD_NFT || CONTRACT_ADDRESSES.GIFT_CARD_NFT === '') {
+  if (!CONTRACT_ADDRESSES.GIFT_CARD_NFT) {
     issues.push('❌ VITE_GIFT_CARD_NFT_ADDRESS is not set');
   } else {
     console.log('✅ GIFT_CARD_NFT_ADDRESS:', CONTRACT_ADDRESSES.GIFT_CARD_NFT);
   }
   
-  if (!CONTRACT_ADDRESSES.GIFT_CARD_MINTER || CONTRACT_ADDRESSES.GIFT_CARD_MINTER === '') {
+  if (!CONTRACT_ADDRESSES.GIFT_CARD_MINTER) {
     issues.push('❌ VITE_GIFT_CARD_MINTER_ADDRESS is not set');
   } else {
     console.log('✅ GIFT_CARD_MINTER_ADDRESS:', CONTRACT_ADDRESSES.GIFT_CARD_MINTER);

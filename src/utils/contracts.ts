@@ -185,7 +185,7 @@ export async function getUserTokens(provider: BrowserProvider, userAddress: stri
     console.log('🔍 Getting user tokens for:', userAddress);
     
     // First, try to get tokens from the minter contract's getUserTokens function
-    if (CONTRACT_ADDRESSES.GIFT_CARD_MINTER && CONTRACT_ADDRESSES.GIFT_CARD_MINTER !== '') {
+    if (CONTRACT_ADDRESSES.GIFT_CARD_MINTER) {
       try {
         const minterContract = getGiftCardMinterContract(provider);
         console.log('📞 Calling getUserTokens on minter contract...');

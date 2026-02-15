@@ -27,6 +27,18 @@ dist-ssr
 .env
 .env.local
 
+# Build/cache
+artifacts/
+cache/
+
+# IDE
+.cursor/
+
+# Test outputs
+playwright-report/
+test-results/
+testsprite_tests/
+
 
 
 

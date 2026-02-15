@@ -24,8 +24,14 @@
     "contracts:export-abis": "node scripts/check-contracts.cjs && npm --prefix contracts run export-abis || echo Contracts not configured",
     "contracts:compile-and-export": "node scripts/check-contracts.cjs && npm --prefix contracts run compile-and-export || echo Contracts not configured. Run 'npm run contracts:setup' to create contracts folder.",
     "debug:logs": "tsx scripts/debug-logs.ts",
+    "debug:swap": "tsx scripts/run-debug-swap.ts",
+    "validate:deployments": "tsx scripts/validate-deployments.ts",
     "test:mint-logs": "tsx scripts/test-mint-logs.ts",
-    "arc:check": "node scripts/check-arc.js"
+    "arc:check": "node scripts/check-arc.js",
+    "deploy:router": "hardhat run scripts/deploy-router.cjs --network arcTestnet --config hardhat.config.cjs",
+    "test:dex": "hardhat test test/ArcDEX.test.cjs --config hardhat.config.cjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",
@@ -44,16 +50,20 @@
     "wagmi": "^3.1.0"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@playwright/test": "^1.58.2",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.16",
+    "chai": "^6.2.2",
     "dotenv": "^17.2.3",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "hardhat": "^2.22.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "tsx": "^4.21.0",

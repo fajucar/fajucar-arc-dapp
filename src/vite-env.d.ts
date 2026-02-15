@@ -9,6 +9,9 @@ interface ImportMetaEnv {
   readonly VITE_GIFT_CARD_MINTER_ADDRESS?: string
   readonly VITE_ARC_COLLECTION_ADDRESS?: string
   readonly VITE_WALLETCONNECT_PROJECT_ID?: string
+  readonly VITE_DEX_ROUTER_ADDRESS?: string
+  readonly VITE_DEX_FACTORY_ADDRESS?: string
+  readonly VITE_DEX_PAIR_ADDRESS?: string
 }
 
 interface ImportMeta {

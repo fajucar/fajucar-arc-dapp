@@ -1,11 +1,13 @@
+import { USDC_ADDRESS, EURC_ADDRESS } from './tokens'
+
 export const CONSTANTS = {
   // Network
   ARC_TESTNET_CHAIN_ID: 5042002,
   ARC_MAINNET_CHAIN_ID: 1337,
   
-  // Contracts - Arc Testnet
-  USDC_ADDRESS: '0x3600000000000000000000000000000000000000' as `0x${string}`, // Arc Testnet USDC
-  EURC_ADDRESS: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  // Contracts - Arc Testnet (oficiais: Arc docs + Circle docs)
+  USDC_ADDRESS,
+  EURC_ADDRESS,
   
   // API
   STATS_UPDATE_INTERVAL: 5000, // 5s

@@ -9,7 +9,10 @@ import { ArcCollectionGallery } from '@/components/ArcCollectionGallery'
 import { SwapPage } from '@/pages/SwapPage'
 import { PoolsPage } from '@/pages/PoolsPage'
 import { MyNFTsPage } from '@/pages/MyNFTsPage'
+import { MyPoolsPage } from '@/pages/MyPoolsPage'
+import { ArcDexTestPool } from '@/pages/ArcDexTestPool'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ConfigErrorBanner } from '@/components/ConfigErrorBanner'
 
 function HomePage() {
   try {
@@ -148,6 +151,7 @@ function MintGalleryWrapper() {
 function App() {
   return (
     <ErrorBoundary>
+      <ConfigErrorBanner />
       <Layout>
         <ErrorBoundary>
           <Routes>
@@ -196,6 +200,22 @@ function App() {
               element={
                 <ErrorBoundary>
                   <MyNFTsPage />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/my-pools" 
+              element={
+                <ErrorBoundary>
+                  <MyPoolsPage />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/arc-dex" 
+              element={
+                <ErrorBoundary>
+                  <ArcDexTestPool />
                 </ErrorBoundary>
               } 
             />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAccount, useWalletClient, usePublicClient, useChainId } from 'wagmi';
 import { getAddress } from 'viem';
 import { decodeEventLog } from 'viem';
@@ -57,6 +58,81 @@ function extractTokenIdFromReceipt(
   return null;
 }
 
+type NFTCardProps = {
+  item: typeof ARC_COLLECTION[0];
+  index: number;
+  onMint: (item: typeof ARC_COLLECTION[0]) => void;
+  minting: number | null;
+  hasCollection: boolean;
+  contractError: boolean;
+};
+
+function NFTCard({ item, index, onMint, minting, hasCollection, contractError }: NFTCardProps) {
+  const isDisabled = !hasCollection || contractError || minting === item.id || minting !== null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut', delay: index * 0.08 }}
+      className="group relative rounded-2xl border border-slate-700/50 bg-slate-900/50 overflow-hidden
+        hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] 
+        transition-all duration-300 ease-in-out hover:-translate-y-2 hover:scale-[1.02]"
+    >
+      {/* Gradient overlay on hover */}
+      <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
+
+      <div className="aspect-square bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center overflow-hidden relative">
+        <img
+          src={item.image}
+          alt={item.name}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              parent.innerHTML = `<div class="w-full h-full flex items-center justify-center text-slate-500">Image not found</div>`;
+            }
+          }}
+        />
+      </div>
+
+      <div className="p-4 relative">
+        <h3 className="text-lg font-semibold mb-2 text-white">{item.name}</h3>
+        <p className="text-sm text-slate-400 mb-4 line-clamp-2">{item.description}</p>
+
+        <motion.button
+          onClick={() => onMint(item)}
+          disabled={isDisabled}
+          whileHover={!isDisabled ? { scale: 1.02 } : {}}
+          whileTap={!isDisabled ? { scale: 0.98 } : {}}
+          className={`relative w-full px-4 py-3 rounded-xl font-semibold overflow-hidden transition-all duration-300 group/btn
+            ${isDisabled
+              ? 'bg-slate-700/60 text-slate-500 cursor-not-allowed'
+            : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-400 hover:to-blue-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.35)]'
+            } ${isDisabled ? 'animate-pulse' : ''}`}
+        >
+          {!isDisabled && (
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 pointer-events-none" />
+          )}
+          {minting === item.id ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Minting...
+            </span>
+          ) : (
+            'Mint this NFT'
+          )}
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
 export function ArcCollectionGallery() {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -71,12 +147,13 @@ export function ArcCollectionGallery() {
   const [lastTxStatus, setLastTxStatus] = useState<'idle' | 'pending' | 'success' | 'failed'>('idle');
 
   const contractAddress = FAJUCAR_COLLECTION_ADDRESS;
-  const contractError =
-    !contractAddress || !contractAddress.trim()
-      ? 'VITE_FAJUCAR_COLLECTION_ADDRESS is not set.'
-      : !contractAddress.startsWith('0x') || contractAddress.trim().length !== 42
-        ? 'VITE_FAJUCAR_COLLECTION_ADDRESS must be 0x followed by 40 hex characters (length 42).'
-        : null;
+  const hasCollection = Boolean(
+    contractAddress && contractAddress.trim() &&
+    contractAddress.startsWith('0x') && contractAddress.trim().length === 42
+  );
+  const contractError = hasCollection
+    ? null
+    : 'Collection contract not configured in production.';
 
   const handleMint = async (item: typeof ARC_COLLECTION[0]) => {
     if (!address || !isConnected) {
@@ -94,7 +171,7 @@ export function ArcCollectionGallery() {
       return;
     }
 
-    if (!isValidContractAddress(contractAddress)) {
+    if (!hasCollection || !isValidContractAddress(contractAddress)) {
       setLastTxStatus('failed');
       setLastMintError(contractError ?? 'Invalid contract address.');
       toast.error(contractError ?? 'Invalid contract address.');
@@ -212,7 +289,7 @@ export function ArcCollectionGallery() {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-xl p-6">
+    <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 backdrop-blur-xl p-6 shadow-[0_0_30px_rgba(34,211,238,0.05)]">
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2 text-white">Mint Your Arc NFTs</h2>
         <p className="text-slate-400">
@@ -221,47 +298,18 @@ export function ArcCollectionGallery() {
       </div>
 
       {contractError && (
-        <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-          <p className="text-red-200 text-sm font-medium mb-1">Invalid contract configuration</p>
-          <p className="text-red-200/90 text-sm">{contractError}</p>
+        <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <p className="text-amber-200 text-sm font-medium mb-1">Collection contract not configured</p>
+          <p className="text-amber-200/90 text-sm">{contractError}</p>
+          <p className="text-slate-400 text-xs mt-2">
+            Set VITE_FAJUCAR_COLLECTION_ADDRESS in your deployment environment (e.g. Vercel) to enable minting.
+          </p>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {ARC_COLLECTION.slice(0, 3).map((item) => (
-          <div
-            key={item.id}
-            className="rounded-2xl border border-slate-700/50 bg-slate-900/50 overflow-hidden hover:border-cyan-500/50 transition-colors"
-          >
-            <div className="aspect-square bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center overflow-hidden">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent) {
-                    parent.innerHTML = `<div class="w-full h-full flex items-center justify-center text-slate-500">Image not found</div>`;
-                  }
-                }}
-              />
-            </div>
-
-            <div className="p-4">
-              <h3 className="text-lg font-semibold mb-2 text-white">{item.name}</h3>
-              <p className="text-sm text-slate-400 mb-4 line-clamp-2">{item.description}</p>
-
-              <button
-                onClick={() => handleMint(item)}
-                disabled={!!contractError || minting === item.id || minting !== null}
-                className="w-full px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {minting === item.id ? 'Minting...' : 'Mint this NFT'}
-              </button>
-            </div>
-          </div>
+        {ARC_COLLECTION.slice(0, 3).map((item, index) => (
+          <NFTCard key={item.id} item={item} index={index} onMint={handleMint} minting={minting} hasCollection={hasCollection} contractError={!!contractError} />
         ))}
       </div>
 

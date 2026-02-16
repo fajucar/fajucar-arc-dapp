@@ -13,6 +13,7 @@ import { ensureAllowance } from '@/lib/allowance'
 import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { toast } from 'react-hot-toast'
+import { formatNumber } from '@/lib/format'
 
 // LiquidityHelper oficial: addLiquidity(pair, tokenA, tokenB, amountA, amountB)
 const LIQUIDITY_HELPER_ABI = [
@@ -230,13 +231,23 @@ export function ArcDexTestPool() {
   return (
     <>
       <Helmet>
-        <title>Liquidity Pools - Arc Network</title>
-        <meta name="description" content="View and manage liquidity pools on ArcDEX" />
+        <title>Pools - FajuARC</title>
+        <meta name="description" content="View and manage liquidity pools on FajuARC" />
       </Helmet>
 
-      <div className="min-h-screen bg-slate-950 py-8 px-4">
+      <div className="py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-6">Liquidity Pools</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold text-white">Pools</h1>
+            <button
+              onClick={loadPairState}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-cyan-500/40 bg-slate-800/60 text-cyan-300 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:shadow-[0_0_12px_rgba(34,211,238,0.1)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
 
           {isWrongChain && (
             <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-200 text-sm">
@@ -245,15 +256,15 @@ export function ArcDexTestPool() {
           )}
 
           {!isWrongChain && (
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-lg p-6 mb-6">
+          <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 mb-6 shadow-[0_0_30px_rgba(34,211,238,0.04)] transition-all duration-300 hover:border-slate-600/60">
             {/* Pair Address + Pool ativa */}
             {state && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 flex-wrap">
                   <label className="text-xs text-slate-400">Par oficial USDC/EURC</label>
                   {BigInt(state.reserve0) > 0n && BigInt(state.reserve1) > 0n && (
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                      Pool ativa
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/40">
+                      Pool Active
                     </span>
                   )}
                 </div>
@@ -336,7 +347,7 @@ export function ArcDexTestPool() {
                       Reserve 0 ({state.token0.symbol})
                     </label>
                     <div className="text-lg text-cyan-400 font-mono">
-                      {state.reserve0Formatted}
+                      {formatNumber(state.reserve0Formatted, 3)}
                     </div>
                     <div className="text-xs text-slate-500 mt-1">Raw: {state.reserve0}</div>
                   </div>
@@ -345,7 +356,7 @@ export function ArcDexTestPool() {
                       Reserve 1 ({state.token1.symbol})
                     </label>
                     <div className="text-lg text-cyan-400 font-mono">
-                      {state.reserve1Formatted}
+                      {formatNumber(state.reserve1Formatted, 3)}
                     </div>
                     <div className="text-xs text-slate-500 mt-1">Raw: {state.reserve1}</div>
                   </div>
@@ -355,7 +366,7 @@ export function ArcDexTestPool() {
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">Total Supply (LP)</label>
                     <div className="text-sm text-white font-mono">
-                      {state.totalSupplyFormatted}
+                      {formatNumber(state.totalSupplyFormatted, 3)}
                     </div>
                     <div className="text-xs text-slate-500 mt-1">Raw: {state.totalSupply}</div>
                   </div>
@@ -369,17 +380,6 @@ export function ArcDexTestPool() {
               </div>
             )}
 
-            {/* Refresh Button */}
-            <div className="mt-6">
-              <button
-                onClick={loadPairState}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-lg text-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
-            </div>
           </div>
           )}
 
@@ -397,7 +397,7 @@ export function ArcDexTestPool() {
                     {state.token0.symbol} Amount
                     {balances && (
                       <span className="text-slate-500 ml-2">
-                        (Balance: {formatUnits(balances.token0, state.token0.decimals)})
+                        (Balance: {formatNumber(formatUnits(balances.token0, state.token0.decimals), 3)})
                       </span>
                     )}
                   </label>
@@ -415,7 +415,7 @@ export function ArcDexTestPool() {
                     {state.token1.symbol} Amount
                     {balances && (
                       <span className="text-slate-500 ml-2">
-                        (Balance: {formatUnits(balances.token1, state.token1.decimals)})
+                        (Balance: {formatNumber(formatUnits(balances.token1, state.token1.decimals), 3)})
                       </span>
                     )}
                   </label>

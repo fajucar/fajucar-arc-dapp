@@ -13,7 +13,7 @@ function LayoutContent({ children }: LayoutProps) {
   const { isOpen, closeModal } = useWalletModal()
   
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-white">
+    <div className="min-h-screen flex flex-col text-white bg-gradient-animated relative">
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />

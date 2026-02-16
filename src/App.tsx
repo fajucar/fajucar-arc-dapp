@@ -19,13 +19,13 @@ function HomePage() {
     return (
       <>
         <Helmet>
-          <title>Arc Network - Blockchain for Stablecoin Finance</title>
+          <title>FajuARC - DeFi on Arc Testnet</title>
           <meta 
             name="description" 
-            content="Purpose-built Layer-1 blockchain with deterministic finality, USDC native gas, and stable fees. Built for institutional-grade stablecoin finance." 
+            content="FajuARC: Swap, mint NFTs, and manage liquidity on Arc Testnet. Premium DeFi experience with USDC and EURC." 
           />
-          <meta property="og:title" content="Arc Network" />
-          <meta property="og:description" content="The future of stablecoin finance" />
+          <meta property="og:title" content="FajuARC" />
+          <meta property="og:description" content="Premium DeFi on Arc Testnet" />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="Arc Network" />
@@ -44,7 +44,7 @@ function HomePage() {
         </ErrorBoundary>
 
         <ErrorBoundary>
-          <section className="py-8 px-4 bg-slate-950">
+          <section className="py-8 px-4">
             <div className="max-w-6xl mx-auto mb-3 text-center">
               <h3 className="text-lg font-semibold tracking-tight mb-1">Network Statistics</h3>
               <p className="text-[10px] text-slate-400">

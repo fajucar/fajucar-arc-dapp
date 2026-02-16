@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useReadContract } from 'wagmi'
 import { NetworkSwitchModal } from './NetworkSwitchModal'
 import { parseUnits, formatUnits, maxUint256, decodeErrorResult, encodeFunctionData } from 'viem'
-import { ArrowDownUp, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowDownUp, Loader2, AlertCircle, CheckCircle2, Settings } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { ARCDEX } from '@/config/arcDex'
@@ -10,6 +10,7 @@ import { CONSTANTS } from '@/config/constants'
 import { EURC_ALTERNATIVE, ZERO_ADDRESS } from '@/config/tokens'
 import { ensureAllowance } from '@/lib/allowance'
 import { assertAddress } from '@/lib/assertAddress'
+import { formatNumber } from '@/lib/format'
 import { buildSwapPath, quoteSwap, simulateSwap } from '@/lib/dex/swapUtils'
 
 export type SwapDebugData = {
@@ -381,10 +382,9 @@ export function SwapInterface() {
   const [lastSwapTxHash, setLastSwapTxHash] = useState<string | null>(null)
   const [debugData, setDebugData] = useState<SwapDebugData | null>(null)
   const [lastSimError, setLastSimError] = useState<string | null>(null)
-  const [lastSimErrorDetail, setLastSimErrorDetail] = useState<string | null>(null)
-  const [debugOpen, setDebugOpen] = useState(false)
-  const [lastSentSwapArgs, setLastSentSwapArgs] = useState<LastSentSwapArgs>(null)
-  const [lastSwapDebug, setLastSwapDebug] = useState<{
+  const [, setLastSimErrorDetail] = useState<string | null>(null)
+  const [, setLastSentSwapArgs] = useState<LastSentSwapArgs>(null)
+  const [, setLastSwapDebug] = useState<{
     chainId: number
     router: string
     path: string[]
@@ -396,8 +396,6 @@ export function SwapInterface() {
     reserve0: string
     reserve1: string
   } | null>(null)
-  const [testApproveHash, setTestApproveHash] = useState<`0x${string}` | null>(null)
-  const [testApproveInProgress, setTestApproveInProgress] = useState(false)
   /** true = Router novo (TransferHelper), false = Router antigo (swap vai reverter), null = ainda não verificou */
   const [routerSupportsPrecompile, setRouterSupportsPrecompile] = useState<boolean | null>(null)
   const [showNetworkModal, setShowNetworkModal] = useState(false)
@@ -406,16 +404,6 @@ export function SwapInterface() {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   // Allowance USDC → Router (para seção "Test Approve USDC" e exibição em tempo real)
-  const { data: usdcAllowance, refetch: refetchUsdcAllowance } = useReadContract({
-    address: ARCDEX.usdc,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: address && DEX_ROUTER_ADDRESS ? [address, DEX_ROUTER_ADDRESS] : undefined,
-  })
-  const { isLoading: isTestApproveConfirming, isSuccess: isTestApproveSuccess } = useWaitForTransactionReceipt({
-    hash: testApproveHash ?? undefined,
-  })
-
   // Allowance do token From para o Router (reactivo; refetch após approve)
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
     address: tokenFrom.address,
@@ -830,34 +818,6 @@ export function SwapInterface() {
         toast.error('Aprovação cancelada na carteira.')
       } else {
         toast.error(errorMsg || 'Falha na aprovação. Tente novamente.')
-      }
-    }
-  }
-
-  /** Teste isolado: approve USDC para o Router (maxUint256). Mostra hash e atualiza allowance. */
-  const handleTestApproveUsdc = async () => {
-    if (!address || !DEX_ROUTER_ADDRESS) {
-      toast.error('Conecte a carteira e configure o Router.')
-      return
-    }
-    setTestApproveInProgress(true)
-    setTestApproveHash(null)
-    try {
-      const txHash = await writeContract({
-        address: ARCDEX.usdc,
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [DEX_ROUTER_ADDRESS, maxUint256],
-      })
-      setTestApproveHash(txHash)
-      toast.success('Tx enviada. Aguardando confirmação...')
-    } catch (err: any) {
-      setTestApproveInProgress(false)
-      const msg = err?.shortMessage ?? err?.message ?? ''
-      if (msg.includes('rejected') || msg.includes('denied')) {
-        toast.error('Approve cancelado na carteira.')
-      } else {
-        toast.error(msg || 'Falha no approve.')
       }
     }
   }
@@ -1749,14 +1709,6 @@ export function SwapInterface() {
     }
   }
 
-  // Após confirmar "Test Approve USDC": atualizar allowance exibido
-  useEffect(() => {
-    if (!isTestApproveSuccess || !testApproveHash) return
-    refetchUsdcAllowance()
-    setTestApproveInProgress(false)
-    setTestApproveHash(null)
-  }, [isTestApproveSuccess, testApproveHash, refetchUsdcAllowance])
-
   // Feedback ao confirmar approve ou swap
   useEffect(() => {
     if (!isSuccess) return
@@ -1817,25 +1769,10 @@ export function SwapInterface() {
   const isApproveLoading = (isPending || isConfirming) && lastWriteType === 'approve'
   const isSwapLoading = (isPending || isConfirming) && lastWriteType === 'swap'
 
-  // TEMP DEBUG: remove after validation — addresses in use (same source as swap)
-  const fmt = (addr: string) =>
-    addr.toLowerCase() === ZERO_ADDRESS.toLowerCase()
-      ? 'ZERO (not configured)'
-      : `${addr} (len ${addr.length})`
-  const debugFactory = fmt(ARCDEX.factory)
-  const debugRouter = fmt(ARCDEX.router)
-  const debugPair = fmt(ARCDEX.pair)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <div className="space-y-4">
-      {/* TEMP DEBUG: addresses in use — remove after validation */}
-      <div className="rounded-lg border border-slate-700 bg-slate-900/40 p-3 text-[10px] font-mono text-slate-400 space-y-1">
-        <div className="text-slate-500 font-semibold mb-1">Config addresses (arcTestnet)</div>
-        <div>Factory: {debugFactory}</div>
-        <div>Router:  {debugRouter}</div>
-        <div>Pair:    {debugPair}</div>
-      </div>
-
       {/* Rede errada: aviso + modal de troca/adicionar rede */}
       {isWrongChain && (
         <>
@@ -1899,132 +1836,144 @@ export function SwapInterface() {
         </div>
       )}
 
-      {/* Token From */}
-      <div className="rounded-lg border border-cyan-500/20 bg-slate-900/40 p-4">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs text-slate-400">From</label>
-          <button
-            onClick={handleMax}
-            className="text-xs text-cyan-400 hover:text-cyan-300"
-          >
-            Max: {formatUnits(balanceFrom, tokenFrom.decimals)}
-          </button>
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={tokenFrom.address}
-            onChange={(e) => {
-              const token = TOKENS.find((t) => t.address === e.target.value)
-              if (token) setTokenFrom(token)
-            }}
-            className="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
-          >
-            {TOKENS.map((token) => (
-              <option key={token.address} value={token.address}>
-                {token.symbol}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={amountFrom}
-            onChange={(e) => handleAmountFromChange(e.target.value)}
-            placeholder="0.0"
-            className="flex-1 bg-transparent border-none text-right text-lg text-white placeholder-slate-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-        </div>
-      </div>
-
-      {/* Switch Button */}
-      <div className="flex justify-center -my-2">
-        <button
-          onClick={handleSwitchTokens}
-          disabled={!tokenTo}
-          className="rounded-full bg-slate-800 border border-cyan-500/20 p-2 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <ArrowDownUp className="h-4 w-4 text-cyan-400" />
-        </button>
-      </div>
-
-      {/* Token To */}
-      <div className="rounded-lg border border-cyan-500/20 bg-slate-900/40 p-4">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs text-slate-400">To</label>
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={tokenTo?.address || ''}
-            onChange={(e) => {
-              const token = TOKENS.find((t) => t.address === e.target.value)
-              if (token) setTokenTo(token)
-            }}
-            className="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
-          >
-            <option value="">Select token</option>
-            {TOKENS.filter((t) => t.address !== tokenFrom.address).map((token) => (
-              <option key={token.address} value={token.address}>
-                {token.symbol}
-              </option>
-            ))}
-          </select>
-          <div className="flex-1 text-right">
-            {isCalculating ? (
-              <Loader2 className="h-5 w-5 text-slate-500 animate-spin inline-block" />
-            ) : (
-              <input
-                type="text"
-                value={amountTo}
-                readOnly
-                placeholder="0.0"
-                className="w-full bg-transparent border-none text-right text-lg text-white placeholder-slate-500 focus:outline-none"
-              />
+      {/* Swap Card */}
+      <div className="rounded-3xl border border-slate-700/40 bg-slate-800/20 p-5 shadow-lg shadow-black/20">
+        <div className="flex items-center justify-end mb-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((o) => !o)}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 transition-colors"
+              title="Settings"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+            {settingsOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} aria-hidden="true" />
+                <div className="absolute right-0 top-full mt-1 z-50 min-w-[200px] rounded-xl border border-slate-600/60 bg-slate-900/95 backdrop-blur-xl p-4 shadow-xl">
+                  <div className="text-xs text-slate-400 mb-2">Slippage tolerance</div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={slippage}
+                      onChange={(e) => setSlippage(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      max="50"
+                      step="0.1"
+                      className="w-20 bg-slate-800/60 border border-slate-600/60 rounded-lg px-3 py-2 text-sm text-white text-right focus:outline-none focus:border-cyan-500/50"
+                    />
+                    <span className="text-slate-400">%</span>
+                  </div>
+                  {minReceived != null && tokenTo && (
+                    <div className="text-xs text-cyan-400/90 mt-2 font-mono">Min: {minReceived} {tokenTo.symbol}</div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Slippage e Min received */}
-      <div className="rounded-lg border border-slate-700/50 bg-slate-900/20 p-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs text-slate-400">Slippage tolerance (default 1%)</label>
-          <div className="flex items-center gap-2">
+        {/* Token From */}
+        <div className="rounded-2xl border border-slate-700/40 bg-slate-800/30 p-4 mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm text-slate-400">From</label>
+            <button onClick={handleMax} className="text-xs text-cyan-400/90 hover:text-cyan-300 transition-colors">
+              Balance: {formatNumber(formatUnits(balanceFrom, tokenFrom.decimals), 3)}
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <select
+              value={tokenFrom.address}
+              onChange={(e) => {
+                const token = TOKENS.find((t) => t.address === e.target.value)
+                if (token) setTokenFrom(token)
+              }}
+              className="w-32 bg-slate-800/80 border border-slate-600/50 rounded-xl px-4 py-3.5 text-base font-medium text-white focus:outline-none focus:border-cyan-500/40 transition-all"
+            >
+              {TOKENS.map((token) => (
+                <option key={token.address} value={token.address}>{token.symbol}</option>
+              ))}
+            </select>
             <input
-              type="number"
-              value={slippage}
-              onChange={(e) => setSlippage(parseFloat(e.target.value) || 0)}
-              min="0"
-              max="50"
-              step="0.1"
-              className="w-16 bg-slate-800/50 border border-slate-700 rounded px-2 py-1 text-xs text-white text-right focus:outline-none focus:border-cyan-500"
+              type="text"
+              inputMode="decimal"
+              value={amountFrom}
+              onChange={(e) => handleAmountFromChange(e.target.value)}
+              placeholder="0.0"
+              className="flex-1 bg-transparent border-none text-right text-2xl font-semibold text-white placeholder-slate-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
-            <span className="text-xs text-slate-400">%</span>
           </div>
         </div>
-        {minReceived != null && tokenTo && (
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Min received (deadline 20 min)</span>
-            <span className="text-cyan-400 font-mono">{minReceived} {tokenTo.symbol}</span>
-          </div>
-        )}
-      </div>
 
-      {/* Um único botão Swap: aprova automaticamente se necessário e em seguida faz o swap */}
+        {/* Switch Button */}
+        <div className="flex justify-center -my-1">
+          <motion.button
+            onClick={handleSwitchTokens}
+            disabled={!tokenTo}
+            whileTap={{ rotate: 180 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="rounded-full bg-slate-800/80 border border-slate-600/50 p-3 hover:bg-slate-700/80 hover:border-cyan-500/30 hover:shadow-[0_0_20px_rgba(34,211,238,0.12)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 z-10 relative"
+          >
+            <ArrowDownUp className="h-5 w-5 text-cyan-400" />
+          </motion.button>
+        </div>
+
+        {/* Token To */}
+        <div className="rounded-2xl border border-slate-700/40 bg-slate-800/30 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm text-slate-400">To</label>
+          </div>
+          <div className="flex items-center gap-4">
+            <select
+              value={tokenTo?.address || ''}
+              onChange={(e) => {
+                const token = TOKENS.find((t) => t.address === e.target.value)
+                if (token) setTokenTo(token)
+              }}
+              className="w-32 bg-slate-800/80 border border-slate-600/50 rounded-xl px-4 py-3.5 text-base font-medium text-white focus:outline-none focus:border-cyan-500/40 transition-all"
+            >
+              <option value="">Select</option>
+              {TOKENS.filter((t) => t.address !== tokenFrom.address).map((token) => (
+                <option key={token.address} value={token.address}>{token.symbol}</option>
+              ))}
+            </select>
+            <div className="flex-1 text-right">
+              {isCalculating ? (
+                <Loader2 className="h-6 w-6 text-slate-500 animate-spin inline-block" />
+              ) : (
+                <input
+                  type="text"
+                  value={amountTo}
+                  readOnly
+                  placeholder="0.0"
+                  className="w-full bg-transparent border-none text-right text-2xl font-semibold text-white placeholder-slate-500 focus:outline-none"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+      {/* Swap Button */}
       {isWrongChain ? (
         <motion.button
           type="button"
           onClick={() => setShowNetworkModal(true)}
-          className="w-full rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white py-3 px-4 font-semibold transition-colors"
+          className="w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-4 px-6 font-semibold text-lg hover:shadow-[0_0_24px_rgba(34,211,238,0.3)] transition-all duration-300"
         >
-          Conecte na Arc Testnet
+          Connect to Arc Testnet
         </motion.button>
       ) : (
         <motion.button
           type="button"
           onClick={handleSwap}
           disabled={!canSwap || isLoading}
-          className="w-full rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white py-3 px-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-          title={routerSupportsPrecompile === false ? 'Atualize o Router no config (veja o aviso acima)' : !canSwap ? 'Preencha From/To e valor' : needsApproval ? 'Clique para aprovar e fazer swap' : 'Clique para fazer swap'}
+          className={`w-full rounded-2xl py-4 px-6 font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300
+            ${!canSwap || isLoading
+              ? 'bg-slate-700/60 text-slate-500 cursor-not-allowed opacity-60'
+              : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-[0_0_24px_rgba(34,211,238,0.35)] hover:from-cyan-400 hover:to-blue-400'
+            }`}
+          title={routerSupportsPrecompile === false ? 'Update Router in config' : !canSwap ? 'Enter amount' : needsApproval ? 'Approve and swap' : 'Swap'}
         >
           {(isSwapLoading || isApproveLoading) ? (
             <>
@@ -2036,205 +1985,50 @@ export function SwapInterface() {
           )}
         </motion.button>
       )}
-
-      {!needsApproval && amountFrom && parseFloat(amountFrom) > 0 && currentAllowance !== undefined && currentAllowance >= (amountInForApproval ?? 0n) && (
-        <div className="text-xs text-emerald-400/90 flex flex-col gap-0.5">
-          <div className="flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-            Token aprovado para o Router atual. Clique em Swap para trocar.
-          </div>
-          {DEX_ROUTER_ADDRESS && (
-            <span className="text-slate-500 font-mono text-[10px]">Router: {DEX_ROUTER_ADDRESS.slice(0, 10)}...{DEX_ROUTER_ADDRESS.slice(-6)}</span>
-          )}
-        </div>
-      )}
-
-      {/* Último erro da simulação — visível na tela (não precisa abrir F12) */}
-      {lastSimError && (
-        <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm">
-          <div className="flex items-center gap-2 text-red-400 font-medium mb-1">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            Último erro (simulação ou swap)
-          </div>
-          <div className="text-red-200/90 break-words text-xs">{lastSimError}</div>
-          {lastSimErrorDetail && (
-            <div className="mt-2 pt-2 border-t border-red-500/30">
-              <span className="text-slate-400 text-xs">Detalhe técnico (pode copiar e colar para análise):</span>
-              <div className="text-amber-200/90 text-xs break-all mt-1 font-mono">{lastSimErrorDetail}</div>
-            </div>
-          )}
-          {/* Mostrar Approve só quando o erro for explicitamente sobre allowance (não na lista "approve em outro endereço") */}
-          {lastSimError && /Aprove o token|Clique em.*Approve|allowance.*Router|approve para este Router/i.test(lastSimError) ? (
-            <div className="mt-2 space-y-2">
-              <p className="text-cyan-300/90 text-xs font-medium">Falta de <strong>approve</strong> do token &quot;From&quot; para o Router. Aprove e tente o Swap de novo:</p>
-              <button
-                type="button"
-                onClick={handleApprove}
-                disabled={!address || !DEX_ROUTER_ADDRESS || !tokenFrom || isLoading}
-                className="rounded-lg bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2"
-              >
-                Approve {tokenFrom?.symbol ?? 'token From'}
-              </button>
-            </div>
-          ) : lastSimError && /Router on-chain sem TransferHelper|bytecode antigo|novo deploy/i.test(lastSimError) ? (
-            <div className="mt-2 space-y-2 text-xs">
-              <p className="text-amber-200/90 font-medium">O contrato no endereço do Router foi deployado com código antigo (sem TransferHelper).</p>
-              <p className="text-slate-400">Faça um novo deploy usando <code className="text-cyan-400">docs/ArcDEXRouter_Remix.sol</code> no Remix (Factory = <code className="text-cyan-400">{CONFIG_FACTORY}</code>), copie o novo endereço do Router e atualize <code className="text-cyan-400">src/config/arcTestnet.ts</code> → <code className="text-cyan-400">addresses.router</code>.</p>
-            </div>
-          ) : (
-            <>
-              <p className="text-slate-400 text-xs mt-2">Se o token já está aprovado, o revert pode ser do Router/Factory on-chain. Abra &quot;Debug Panel (Swap)&quot; abaixo para router, pair e reserves.</p>
-              {lastSimError && /Revert na simulação|motivo não decodificado|não decodificado|Redeploy do Router/i.test(lastSimError) && (
-                <p className="text-amber-200/90 text-xs mt-2"><strong>Passos para corrigir:</strong> 1) Abra Remix e cole <code className="bg-slate-800 px-1 rounded">docs/ArcDEXRouter_Remix.sol</code>. 2) Deploy com Factory = <code className="text-cyan-400">{CONFIG_FACTORY?.slice(0, 10)}...</code>. 3) Atualize <code className="text-cyan-400">src/config/arcTestnet.ts</code> com o novo endereço do Router.</p>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Último swap: hash e link para o Explorer (ver na blockchain) */}
-      {lastSwapTxHash && (
-        <div className="rounded-lg border border-cyan-500/30 bg-slate-900/40 p-3 text-sm">
-          <div className="text-slate-400 mb-1">Última transação de swap</div>
-          <div className="font-mono text-cyan-400 break-all mb-2">
-            {lastSwapTxHash.slice(0, 10)}...{lastSwapTxHash.slice(-8)}
-          </div>
-          <a
-            href={`https://testnet.arcscan.app/tx/${lastSwapTxHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-400 hover:text-cyan-300 underline"
-          >
-            Ver no Explorer (blockchain)
-          </a>
-        </div>
-      )}
-
-      {/* Debug Panel */}
-      <div className="rounded-lg border border-slate-600/60 bg-slate-900/50 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setDebugOpen((o) => !o)}
-          className="w-full flex items-center justify-between py-2 px-3 text-left text-xs text-slate-400 hover:text-slate-300 hover:bg-slate-800/50"
-        >
-          <span className="font-medium">Debug Panel (Swap)</span>
-          {debugOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-        {debugOpen && (
-          <div className="border-t border-slate-700/50 p-3 space-y-2 text-xs font-mono">
-            {debugData ? (
-              <>
-                <div><span className="text-slate-500">chainId atual:</span> <span className="text-cyan-400">{debugData.chainId ?? '—'}</span></div>
-                <div><span className="text-slate-500">router usado:</span> <span className="text-cyan-400 break-all">{debugData.routerAddress}</span></div>
-                <div><span className="text-slate-500">factoryAddress (config):</span> <span className="text-cyan-400 break-all">{debugData.factoryAddress}</span></div>
-                <div><span className="text-slate-500">router.factory() on-chain:</span> <span className="text-cyan-400 break-all">{debugData.routerFactoryOnChain ?? '—'}</span></div>
-                {debugData.routerFactoryOnChain && debugData.factoryAddress && (
-                  <div>
-                    <span className="text-slate-500">Factory match:</span>{' '}
-                    {debugData.routerFactoryOnChain.toLowerCase() === debugData.factoryAddress.toLowerCase() ? (
-                      <span className="text-emerald-400">✓ OK</span>
-                    ) : (
-                      <span className="text-red-400">✗ MISMATCH</span>
-                    )}
-                  </div>
-                )}
-                <div><span className="text-slate-500">tokenIn:</span> <span className="text-cyan-400 break-all">{debugData.tokenIn ?? '—'}</span></div>
-                <div><span className="text-slate-500">tokenOut:</span> <span className="text-cyan-400 break-all">{debugData.tokenOut ?? '—'}</span></div>
-                <div><span className="text-slate-500">pair = factory.getPair(tokenIn, tokenOut):</span> <span className="text-cyan-400 break-all">{debugData.pairAddress ?? 'address(0)'}</span></div>
-                <div><span className="text-slate-500">reserves (getReserves):</span> reserve0={debugData.reserve0} reserve1={debugData.reserve1}</div>
-                <div><span className="text-slate-500">token0:</span> <span className="break-all">{debugData.token0 ?? '—'}</span></div>
-                <div><span className="text-slate-500">token1:</span> <span className="break-all">{debugData.token1 ?? '—'}</span></div>
-                <div><span className="text-slate-500">balance do usuário (tokenIn):</span> {debugData.balanceUser}</div>
-                <div><span className="text-slate-500">allowance (tokenIn → router):</span> {debugData.allowanceUser}</div>
-                <div><span className="text-slate-500">amountIn (raw):</span> {debugData.amountIn ?? '—'}</div>
-                <div><span className="text-slate-500">amountOut esperado:</span> {debugData.amountOut ?? '—'}</div>
-                <div><span className="text-slate-500">amountOutMin (com slippage):</span> {debugData.amountOutMin ?? '—'}</div>
-                <div><span className="text-slate-500">block timestamp (último bloco):</span> {debugData.blockTimestamp ?? '—'}</div>
-                <div><span className="text-slate-500">deadline (client, unix sec):</span> {debugData.deadlineClient}</div>
-                {lastSwapDebug && (
-                  <div className="mt-2 pt-2 border-t border-slate-700 space-y-1">
-                    <div className="text-cyan-300/90 font-medium">Params do último swap (pré-simulação):</div>
-                    <div><span className="text-slate-500">chainId:</span> {lastSwapDebug.chainId}</div>
-                    <div><span className="text-slate-500">router:</span> <span className="break-all">{lastSwapDebug.router}</span></div>
-                    <div><span className="text-slate-500">path:</span> <span className="break-all font-mono">[{lastSwapDebug.path.join(', ')}]</span></div>
-                    <div><span className="text-slate-500">amountIn:</span> {lastSwapDebug.amountIn}</div>
-                    <div><span className="text-slate-500">amountOut:</span> {lastSwapDebug.amountOut}</div>
-                    <div><span className="text-slate-500">minOut:</span> {lastSwapDebug.minOut}</div>
-                    <div><span className="text-slate-500">deadline:</span> {lastSwapDebug.deadline}</div>
-                    <div><span className="text-slate-500">allowance:</span> {lastSwapDebug.allowance}</div>
-                    <div><span className="text-slate-500">reserves:</span> reserve0={lastSwapDebug.reserve0} reserve1={lastSwapDebug.reserve1}</div>
-                  </div>
-                )}
-                {lastSentSwapArgs && (
-                  <div className="mt-2 pt-2 border-t border-slate-700 space-y-1">
-                    <div className="text-amber-400/90 font-medium">Último swap enviado (RAW bigint):</div>
-                    <div><span className="text-slate-500">amountInRaw:</span> <span className="text-cyan-400 font-mono">{lastSentSwapArgs.amountInRaw}</span></div>
-                    <div><span className="text-slate-500">amountOutMinRaw:</span> <span className="text-cyan-400 font-mono">{lastSentSwapArgs.amountOutMinRaw}</span> <span className="text-slate-500 text-[10px]">(ex: 3.705530 EURC = 3705530, não 3705530e18)</span></div>
-                    <div><span className="text-slate-500">path:</span> <span className="text-cyan-400 break-all font-mono">{JSON.stringify(lastSentSwapArgs.path)}</span></div>
-                    <div><span className="text-slate-500">to:</span> <span className="text-cyan-400 break-all font-mono">{lastSentSwapArgs.to}</span></div>
-                    <div><span className="text-slate-500">deadline:</span> <span className="text-cyan-400 font-mono">{lastSentSwapArgs.deadline}</span></div>
-                  </div>
-                )}
-                {debugData.warning && (
-                  <div className="text-amber-400 mt-2 flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                    {debugData.warning}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-slate-500">Selecione From e To para carregar dados.</div>
-            )}
-            {lastSimError && (
-              <div className="mt-2 pt-2 border-t border-slate-700">
-                <span className="text-slate-500">Último erro da simulação:</span>
-                <div className="text-red-400 mt-1 break-words">{lastSimError}</div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Allowance (só leitura); approve é feito pelo botão Swap quando necessário */}
-      {debugOpen && (
-        <div className="rounded-lg border border-slate-700/50 bg-slate-900/30 p-3 text-xs text-slate-400 space-y-1">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span>Allowance USDC → Router:</span>
-            <span className="font-mono text-cyan-400">
-              {usdcAllowance !== undefined
-                ? `${formatUnits(usdcAllowance, ARCDEX.decimals.USDC)} USDC`
-                : address && DEX_ROUTER_ADDRESS
-                  ? 'Carregando...'
-                  : '—'}
-            </span>
+      {!needsApproval && amountFrom && parseFloat(amountFrom) > 0 && currentAllowance !== undefined && currentAllowance >= (amountInForApproval ?? 0n) && (
+        <div className="text-xs text-emerald-400/90 flex items-center gap-1">
+          <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+          Token approved. Click Swap to exchange.
+        </div>
+      )}
+
+      {/* Swap error — minimal display */}
+      {lastSimError && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm">
+          <div className="flex items-center gap-2 text-red-400 font-medium mb-1">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            Swap failed
           </div>
-          {DEX_ROUTER_ADDRESS && (
-            <div className="text-slate-500 truncate">
-              Router: <span className="font-mono text-slate-400">{DEX_ROUTER_ADDRESS}</span>
-            </div>
-          )}
-          {address && DEX_ROUTER_ADDRESS && (
+          <div className="text-red-200/90 break-words text-xs">{lastSimError}</div>
+          {lastSimError && /Aprove o token|Clique em.*Approve|allowance.*Router|approve para este Router/i.test(lastSimError) && (
             <button
               type="button"
-              onClick={handleTestApproveUsdc}
-              disabled={testApproveInProgress || isTestApproveConfirming}
-              className="mt-2 px-2 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 rounded text-cyan-400 disabled:opacity-50"
+              onClick={handleApprove}
+              disabled={!address || !DEX_ROUTER_ADDRESS || !tokenFrom || isLoading}
+              className="mt-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2"
             >
-              {testApproveInProgress || isTestApproveConfirming ? 'Aguardando...' : 'Test Approve USDC'}
+              Approve {tokenFrom?.symbol ?? 'token'}
             </button>
           )}
         </div>
       )}
 
-      {/* Ferramentas para debugar revert */}
-      <details className="mt-3 rounded-lg border border-slate-700/50 bg-slate-900/30 text-xs text-slate-400">
-        <summary className="cursor-pointer py-2 px-3 hover:text-slate-300">Ferramentas para debugar revert</summary>
-        <ul className="list-disc list-inside py-2 px-3 space-y-1 text-slate-500">
-          <li><a href="https://dashboard.tenderly.co/simulator" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Tenderly</a> — simule a tx e veja o motivo exato do revert</li>
-          <li><a href="https://remix.ethereum.org" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Remix</a> — conecte na Arc Testnet e chame o Router (swapExactTokensForTokens) com os mesmos args</li>
-          <li><a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">ArcScan</a> — confira allowance do USDC para o Router e reservas do par</li>
-        </ul>
-      </details>
+      {/* Last transaction — minimal line */}
+      {lastSwapTxHash && (
+        <div className="text-xs text-slate-500 flex items-center gap-2">
+          <span>Last swap:</span>
+          <a
+            href={`${ARCDEX.explorer}/tx/${lastSwapTxHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-400 hover:text-cyan-300 transition-colors"
+          >
+            {lastSwapTxHash.slice(0, 10)}...{lastSwapTxHash.slice(-8)}
+          </a>
+        </div>
+      )}
 
       {/* Success Indicator */}
       {isSuccess && (

@@ -25,7 +25,22 @@ function parseEnvAddress(envKey: string): `0x${string}` | '' {
 
 export const GIFT_CARD_MINTER_ADDRESS = parseEnvAddress('VITE_GIFT_CARD_MINTER_ADDRESS');
 export const GIFT_CARD_NFT_ADDRESS = parseEnvAddress('VITE_GIFT_CARD_NFT_ADDRESS');
-export const FAJUCAR_COLLECTION_ADDRESS = parseEnvAddress('VITE_FAJUCAR_COLLECTION_ADDRESS');
+
+/**
+ * Safe getter for Fajucar collection address. Never throws.
+ * Returns empty string when VITE_FAJUCAR_COLLECTION_ADDRESS is undefined, empty, or invalid.
+ */
+function getFajucarCollectionAddressSafe(): `0x${string}` | '' {
+  try {
+    const raw = import.meta.env.VITE_FAJUCAR_COLLECTION_ADDRESS;
+    if (raw === undefined || raw === null || (typeof raw === 'string' && !raw.trim())) return '';
+    return parseEnvAddress('VITE_FAJUCAR_COLLECTION_ADDRESS');
+  } catch {
+    return '';
+  }
+}
+
+export const FAJUCAR_COLLECTION_ADDRESS = getFajucarCollectionAddressSafe();
 export const MOCK_USDC_ADDRESS = parseEnvAddress('VITE_MOCK_USDC_ADDRESS');
 
 export const CONTRACT_ADDRESSES = {

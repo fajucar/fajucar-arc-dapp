@@ -27,9 +27,9 @@ export function Hero({}: HeroProps) {
           animate={{ opacity: 1, y: 0 }}
           className="mx-auto max-w-3xl text-center"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-slate-900/35 px-4 py-2 text-xs text-cyan-200 backdrop-blur">
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/40 px-4 py-2 text-xs text-cyan-300 bg-cyan-500/10 shadow-[0_0_16px_rgba(34,211,238,0.15)] backdrop-blur-sm">
             <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-            ARC TESTNET ENVIRONMENT
+            Running on Arc Testnet
           </div>
         </motion.div>
 
@@ -40,8 +40,8 @@ export function Hero({}: HeroProps) {
           transition={{ delay: 0.1 }}
           className="mt-6 text-4xl md:text-6xl font-black tracking-tight text-center"
         >
-          <span className="bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">
-            ARC NETWORK
+          <span className="bg-gradient-to-r from-white via-cyan-100 to-cyan-300 bg-clip-text text-transparent">
+            FajuARC
           </span>
         </motion.h1>
 

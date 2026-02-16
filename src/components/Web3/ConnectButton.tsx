@@ -164,7 +164,7 @@ export function ConnectButton() {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center gap-3 rounded-xl border border-cyan-500/25 bg-slate-900/50 px-4 py-2.5 backdrop-blur-xl hover:bg-slate-900/70 transition-all"
+        className="flex items-center gap-3 rounded-full border border-cyan-500/30 bg-slate-800/60 px-4 py-2.5 backdrop-blur-xl hover:bg-slate-800/80 hover:shadow-[0_0_16px_rgba(34,211,238,0.15)] transition-all duration-300"
       >
         {ensAvatar ? (
           <img src={ensAvatar} alt="ENS Avatar" className="h-6 w-6 rounded-full" />

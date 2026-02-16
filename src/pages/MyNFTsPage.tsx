@@ -2,13 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import React from 'react'
 import { useAccount, usePublicClient, useChainId } from 'wagmi'
 import { useSearchParams } from 'react-router-dom'
-import { Loader2, RefreshCw, ExternalLink, Copy, CheckCircle2, Image as ImageIcon } from 'lucide-react'
+import { RefreshCw, ExternalLink, Copy, CheckCircle2, Image as ImageIcon, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useWalletModal } from '@/contexts/WalletModalContext'
 import { FAJUCAR_COLLECTION_ADDRESS } from '@/config/contracts'
 import { ARC_COLLECTION, getImageURL } from '@/config/arcCollection'
 import { AppShell } from '@/components/Layout/AppShell'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { CONSTANTS } from '@/config/constants'
 
 const GLOBAL_TIMEOUT_MS = 30000
@@ -120,6 +120,7 @@ export function MyNFTsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [selectedNft, setSelectedNft] = useState<NFTInfo | null>(null)
 
   const loadingRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -443,9 +444,22 @@ export function MyNFTsPage() {
       )}
 
       {loading && nfts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-cyan-400/80 mb-3" />
-          <p className="text-slate-500 text-sm">Carregando seus NFTs…</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0.6 }}
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="rounded-2xl border border-slate-700/40 bg-slate-800/40 overflow-hidden"
+            >
+              <div className="aspect-square bg-slate-700/50 animate-pulse" />
+              <div className="p-3 space-y-2">
+                <div className="h-4 bg-slate-700/50 rounded animate-pulse" />
+                <div className="h-3 w-2/3 bg-slate-700/50 rounded animate-pulse" />
+              </div>
+            </motion.div>
+          ))}
         </div>
       ) : error ? (
         <div className="rounded-xl bg-slate-800/40 border border-red-500/20 px-6 py-8 text-center">
@@ -470,57 +484,57 @@ export function MyNFTsPage() {
           </button>
         </div>
       ) : (
-        <div className="w-full flex justify-center">
-          <div className={`grid gap-4 ${nfts.length <= 3 ? 'grid-cols-3 w-fit' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5'}`}>
+        <div className="w-full">
+          <div className={`grid gap-4 ${nfts.length <= 3 ? 'grid-cols-3 w-fit mx-auto' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5'}`}>
             {nfts.map((nft, index) => (
-            <motion.div
-              key={`${nft.contractAddress}-${nft.tokenId}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <NFTCard
-                nft={nft}
-                copied={copied}
-                onCopy={copyToClipboard}
-                isHighlighted={highlightParam === nft.tokenId}
-                ref={highlightParam === nft.tokenId ? highlightedTokenIdRef : undefined}
-              />
-            </motion.div>
-          ))}
+              <motion.div
+                key={`${nft.contractAddress}-${nft.tokenId}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05, ease: 'easeOut' }}
+              >
+                <NFTCard
+                  nft={nft}
+                  isHighlighted={highlightParam === nft.tokenId}
+                  ref={highlightParam === nft.tokenId ? highlightedTokenIdRef : undefined}
+                  onClick={() => setSelectedNft(nft)}
+                />
+              </motion.div>
+            ))}
           </div>
+          <NFTModal nft={selectedNft} copied={copied} onCopy={copyToClipboard} onClose={() => setSelectedNft(null)} />
         </div>
       )}
     </AppShell>
   )
 }
 
-// Card: só imagem + ID, Contract, Explorer (mínimo de texto)
+// Card: imagem + ID, hover zoom, click to open modal
 const NFTCard = React.forwardRef<HTMLDivElement, {
   nft: NFTInfo
-  copied: string | null
-  onCopy: (text: string, label: string) => void
   isHighlighted?: boolean
-}>(({ nft, copied, onCopy, isHighlighted }, ref) => {
+  onClick?: () => void
+}>(({ nft, isHighlighted, onClick }, ref) => {
   const [imageError, setImageError] = useState(false)
   const showImage = nft.image && !imageError
 
   return (
-    <div
+    <motion.div
       ref={ref}
-      className={`rounded-xl border overflow-hidden transition-all duration-200 ${
-        isHighlighted
-          ? 'border-cyan-400/60 shadow-[0_0_20px_rgba(34,211,238,0.12)] ring-1 ring-cyan-400/30 scale-[1.02]'
-          : 'border-slate-700/40 hover:border-slate-600/60'
-      }`}
+      onClick={onClick}
+      whileHover={{ scale: 1.03 }}
+      className={`cursor-pointer rounded-2xl border overflow-hidden transition-all duration-300 ease-in-out
+        ${isHighlighted
+          ? 'border-cyan-400/60 shadow-[0_0_24px_rgba(34,211,238,0.2)] ring-1 ring-cyan-400/30 scale-[1.02]'
+          : 'border-slate-700/40 hover:border-cyan-500/30 hover:shadow-[0_0_20px_rgba(34,211,238,0.12)]'
+        }`}
     >
-      {/* Imagem responsiva – ocupa quase todo o card */}
-      <div className="relative aspect-square bg-slate-800/50 flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-square bg-slate-800/50 flex items-center justify-center overflow-hidden group">
         {showImage ? (
           <img
             src={nft.image}
             alt={`#${nft.tokenId}`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
             onError={() => setImageError(true)}
           />
@@ -528,41 +542,82 @@ const NFTCard = React.forwardRef<HTMLDivElement, {
           <ImageIcon className="w-12 h-12 text-slate-600" />
         )}
       </div>
-
-      {/* Só ID, Contract, Explorer */}
-      <div className="px-2.5 py-2 bg-slate-900/60 border-t border-slate-700/40 flex flex-col gap-1">
+      <div className="px-3 py-2.5 bg-slate-900/60 border-t border-slate-700/40 flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2 min-w-0">
           <span className="font-mono text-xs text-slate-300 truncate">#{nft.tokenId}</span>
-          <button
-            onClick={() => onCopy(nft.tokenId, 'Token ID')}
-            className="shrink-0 p-0.5 rounded hover:bg-slate-700/50 transition-colors"
-            aria-label="Copiar ID"
-          >
-            {copied === 'Token ID' ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-slate-500" />}
-          </button>
+          <span className="text-xs text-slate-400 truncate">{nft.name || 'Unknown'}</span>
         </div>
-        <div className="flex items-center justify-between gap-2 min-w-0">
-          <span className="font-mono text-[10px] text-slate-400 truncate">{nft.contractAddress.slice(0, 6)}…{nft.contractAddress.slice(-4)}</span>
-          <button
-            onClick={() => onCopy(nft.contractAddress, 'Address')}
-            className="shrink-0 p-0.5 rounded hover:bg-slate-700/50 transition-colors"
-            aria-label="Copiar contrato"
-          >
-            {copied === 'Address' ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-slate-500" />}
-          </button>
-        </div>
-        <a
-          href={`${CONSTANTS.LINKS.explorer}/token/${nft.contractAddress}?a=${nft.tokenId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1 text-[11px] text-cyan-400/90 hover:text-cyan-300 transition-colors pt-0.5"
-        >
-          Explorer
-          <ExternalLink className="h-2.5 w-2.5" />
-        </a>
       </div>
-    </div>
+    </motion.div>
   )
 })
 
 NFTCard.displayName = 'NFTCard'
+
+// Modal: glass background, large preview, metadata, copy contract, explorer link
+function NFTModal({ nft, copied, onCopy, onClose }: {
+  nft: NFTInfo | null
+  copied: string | null
+  onCopy: (text: string, label: string) => void
+  onClose: () => void
+}) {
+  const [imageError, setImageError] = useState(false)
+
+  return (
+    <AnimatePresence mode="wait">
+      {nft && (
+      <motion.div
+        key={`modal-${nft.contractAddress}-${nft.tokenId}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ type: 'spring', duration: 0.3 }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-md rounded-2xl border border-slate-700/50 bg-slate-900/90 backdrop-blur-xl shadow-2xl overflow-hidden"
+        >
+          <div className="relative aspect-square bg-slate-800/50 flex items-center justify-center overflow-hidden">
+            {(nft.image && !imageError) ? (
+              <img src={nft.image} alt={`#${nft.tokenId}`} className="w-full h-full object-contain" onError={() => setImageError(true)} />
+            ) : (
+              <ImageIcon className="w-20 h-20 text-slate-600" />
+            )}
+            <button onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700/80 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-4 space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white">{nft.name || `Token #${nft.tokenId}`}</h3>
+              <p className="font-mono text-sm text-slate-400">#{nft.tokenId}</p>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-slate-800/60 px-3 py-2">
+              <span className="font-mono text-xs text-slate-300 truncate flex-1 mr-2">{nft.contractAddress}</span>
+              <button onClick={() => onCopy(nft.contractAddress, 'Address')} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 transition-colors text-sm font-medium">
+                {copied === 'Address' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                Copy Contract
+              </button>
+            </div>
+            <a
+              href={`${CONSTANTS.LINKS.explorer}/token/${nft.contractAddress}?a=${nft.tokenId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 transition-colors font-medium"
+            >
+              View on Explorer
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+        </motion.div>
+      </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}

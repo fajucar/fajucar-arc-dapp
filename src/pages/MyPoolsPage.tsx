@@ -36,19 +36,11 @@ const LIQUIDITY_HELPER_ABI = [
 function PositionCard({
   pool,
   onManage,
-  onRemove,
-  removingLiquidity,
-  isPending,
-  isConfirming,
   explorerBase,
   explorerName,
 }: {
   pool: UserPoolPosition
   onManage: () => void
-  onRemove: () => void
-  removingLiquidity: boolean
-  isPending: boolean
-  isConfirming: boolean
   explorerBase: string
   explorerName: string
 }) {
@@ -72,14 +64,6 @@ function PositionCard({
             className="px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500 hover:bg-cyan-600 text-white transition-colors"
           >
             Manage
-          </button>
-          <button
-            onClick={onRemove}
-            disabled={removingLiquidity || isPending || isConfirming}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-          >
-            {removingLiquidity || isPending || isConfirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            Remover liquidez
           </button>
           <a
             href={`${explorerBase}/address/${pool.pairAddress}`}
@@ -308,7 +292,7 @@ export function MyPoolsPage() {
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-                Atualizar
+                Refresh
               </button>
             </div>
 
@@ -342,10 +326,6 @@ export function MyPoolsPage() {
                     key={pool.pairAddress}
                     pool={pool}
                     onManage={() => { setManagePool(pool); setManageAction(null); setAmount0(''); setAmount1(''); }}
-                    onRemove={() => { setManagePool(pool); setManageAction('remove'); }}
-                    removingLiquidity={removingLiquidity === pool.pairAddress}
-                    isPending={isPending}
-                    isConfirming={isConfirming}
                     explorerBase={ARCDEX.explorer}
                     explorerName={ARCDEX.explorerName}
                   />
@@ -373,7 +353,7 @@ export function MyPoolsPage() {
                 className="w-full max-w-md rounded-2xl border border-slate-700/50 bg-slate-900/95 backdrop-blur-xl p-6 shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Gerenciar {managePool.token0.symbol} / {managePool.token1.symbol}</h3>
+                  <h3 className="text-lg font-semibold text-white">Manage {managePool.token0.symbol} / {managePool.token1.symbol}</h3>
                   <button onClick={() => setManagePool(null)} className="p-2 rounded-lg hover:bg-slate-800 transition-colors">
                     <X className="h-5 w-5 text-slate-400" />
                   </button>

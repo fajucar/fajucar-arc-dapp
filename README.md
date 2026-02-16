@@ -39,7 +39,10 @@ Output goes to `dist/`.
 
 Adicione as seguintes variáveis em **Vercel → Settings → Environment Variables**:
 
-- `VITE_WALLETCONNECT_PROJECT_ID` (obrigatório)
+- `VITE_WALLETCONNECT_PROJECT_ID` (obrigatório para conexão via QR/deep link):
+  1. Crie conta em [cloud.walletconnect.com](https://cloud.walletconnect.com)
+  2. New Project → copie o **Project ID**
+  3. Cole em `VITE_WALLETCONNECT_PROJECT_ID`
 - `VITE_ARC_COLLECTION_ADDRESS` (obrigatório)
 - `VITE_GIFT_CARD_NFT_ADDRESS` (opcional)
 

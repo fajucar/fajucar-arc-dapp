@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useConnect, useConnectors } from 'wagmi'
 import toast from 'react-hot-toast'
+import { ExternalLink } from 'lucide-react'
 import { WALLETCONNECT_PROJECT_ID } from '@/config/wagmi'
 
 interface WalletModalProps {
@@ -226,9 +227,8 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
         })
       }
 
-      // WalletConnect no desktop (depois dos injected)
-      // Don't show WalletConnect if disabled by circuit breaker
-      if (hasWalletConnect && !walletConnectDisabled) {
+      // WalletConnect no desktop (só se connector existe e projectId configurado)
+      if (hasWalletConnect && wcConnector && WALLETCONNECT_PROJECT_ID && !walletConnectDisabled) {
         list.push({
           id: 'walletconnect',
           name: 'WalletConnect',
@@ -257,46 +257,29 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }
 
     return list
-  }, [isOpen, connectors, mobile, walletConnectDisabled])
+  }, [isOpen, connectors, mobile, walletConnectDisabled, WALLETCONNECT_PROJECT_ID])
 
   if (!isOpen) return null
 
   const handleConnect = async (wallet: typeof wallets[0]) => {
     setIsConnecting(true)
     setConnectError(null)
-    
-    // Use the wallet's connector (injected or WalletConnect)
+
     let connectorToUse = wallet.connector
-    
-    // On mobile, prefer WalletConnect if available, but fallback to injected if not configured
-    if (mobile && wallet.type === 'walletConnect') {
-      const wcConnector = connectors.find(c => c.type === 'walletConnect' && c.id)
-      // Only use WalletConnect if connector exists and projectId is configured
-      if (wcConnector && wcConnector.id && WALLETCONNECT_PROJECT_ID) {
-        connectorToUse = wcConnector
-        console.log('[WalletModal] Mobile: Using WalletConnect connector for', wallet.name)
-      } else {
-        // WalletConnect not available, but user selected WalletConnect option
-        // This shouldn't happen if we filter wallets correctly, but handle gracefully
-        console.warn('[WalletModal] Mobile: WalletConnect not available, but user selected WalletConnect option')
-        const errorMsg = 'WalletConnect is not configured. Please use MetaMask or another injected wallet.'
+
+    // WalletConnect: ALWAYS use the explicit walletConnect connector (never injected)
+    if (wallet.type === 'walletConnect') {
+      const wcConnector = connectors.find((c) => c.type === 'walletConnect')
+      if (!wcConnector || !WALLETCONNECT_PROJECT_ID) {
+        const errorMsg = 'WalletConnect is not configured. Add VITE_WALLETCONNECT_PROJECT_ID to your env.'
         setConnectError(errorMsg)
-        toast.error('WalletConnect not available')
+        toast.error('WalletConnect not configured')
         setIsConnecting(false)
         return
       }
+      connectorToUse = wcConnector
     }
-    
-    // If user is trying to use WalletConnect but it's not configured, block only that specific case
-    if (wallet.type === 'walletConnect' && !WALLETCONNECT_PROJECT_ID) {
-      const errorMsg = 'WalletConnect is not configured. Please use MetaMask or another injected wallet.'
-      setConnectError(errorMsg)
-      toast.error('WalletConnect not configured')
-      setIsConnecting(false)
-      return
-    }
-    
-    // Final validation: ensure connector exists and has id before attempting connection
+
     if (!connectorToUse || !connectorToUse.id) {
       const errorMsg = 'Wallet connector not available or not initialized'
       setConnectError(errorMsg)
@@ -376,6 +359,32 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
         {/* Content - scrollable */}
         <div className={`flex-1 overflow-y-auto ${mobile ? 'p-4' : 'p-4'}`}>
+          {/* When projectId missing: show clear message (devs see console.warn from wagmi) */}
+          {!WALLETCONNECT_PROJECT_ID && (
+            <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <p className="text-sm text-amber-200">
+                WalletConnect is not configured. On mobile, use &quot;Open in MetaMask&quot; below.
+              </p>
+            </div>
+          )}
+          {/* Mobile: prominent "Open in MetaMask Browser" - most reliable way to connect on mobile */}
+          {mobile && (
+            <a
+              href={`https://link.metamask.io/dapp/${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : 'https://fajucar.xyz')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-4 flex items-center gap-3 p-4 rounded-xl bg-[#f6851b]/15 border-2 border-[#f6851b]/40 hover:bg-[#f6851b]/25 transition-colors"
+            >
+              <div className="shrink-0 w-10 h-10 rounded-full bg-[#f6851b]/30 flex items-center justify-center">
+                <ExternalLink className="h-5 w-5 text-[#f6851b]" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-white">Open in MetaMask</p>
+                <p className="text-xs text-slate-400 mt-0.5">Best option on mobile. Opens this site in MetaMask&apos;s built-in browser.</p>
+              </div>
+              <span className="text-[#f6851b] shrink-0">→</span>
+            </a>
+          )}
           {/* Circuit breaker message when WalletConnect is disabled */}
           {walletConnectDisabled && (
             <div className="mb-4 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
@@ -432,7 +441,11 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 ) : (
                   <>
                     <p className="font-semibold text-slate-300 mb-2">No Wallets Available</p>
-                    <p className="text-sm mt-2">Please install a wallet extension like MetaMask or Rabby</p>
+                    <p className="text-sm mt-2">
+                      {mobile 
+                        ? 'Tap "Open in MetaMask" above to connect, or install MetaMask from the app store.'
+                        : 'Please install a wallet extension like MetaMask or Rabby'}
+                    </p>
                   </>
                 )}
               </div>

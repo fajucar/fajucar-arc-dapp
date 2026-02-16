@@ -141,12 +141,12 @@ export function ArcDexTestPool() {
 
   const handleAddLiquidity = async () => {
     if (!state || !address || !publicClient || !isConnected) {
-      toast.error('Conecte sua carteira primeiro')
+      toast.error('Connect your wallet first')
       return
     }
 
     if (!amount0 || !amount1 || parseFloat(amount0) <= 0 || parseFloat(amount1) <= 0) {
-      toast.error('Digite valores válidos para ambos os tokens')
+      toast.error('Enter valid amounts for both tokens')
       return
     }
 
@@ -179,21 +179,21 @@ export function ArcDexTestPool() {
       ])
 
       if (balance0 < amount0Wei) {
-        throw new Error(`Saldo insuficiente de ${state.token0.symbol}. Necessário: ${amount0}, Disponível: ${formatUnits(balance0, decimals0)}`)
+        throw new Error(`Insufficient balance of ${state.token0.symbol}. Required: ${amount0}, Available: ${formatUnits(balance0, decimals0)}`)
       }
       if (balance1 < amount1Wei) {
-        throw new Error(`Saldo insuficiente de ${state.token1.symbol}. Necessário: ${amount1}, Disponível: ${formatUnits(balance1, decimals1)}`)
+        throw new Error(`Insufficient balance of ${state.token1.symbol}. Required: ${amount1}, Available: ${formatUnits(balance1, decimals1)}`)
       }
 
       // Approve para o LiquidityHelper (spender = liquidityHelper)
-      toast.loading(`Aprovar ${state.token0.symbol} para Helper...`, { id: 'approve0' })
+      toast.loading(`Approving ${state.token0.symbol} for Helper...`, { id: 'approve0' })
       await ensureAllowance(publicClient, writeOpts, token0Addr, address, ARCDEX.liquidityHelper, amount0Wei)
       toast.dismiss('approve0')
-      toast.loading(`Aprovar ${state.token1.symbol} para Helper...`, { id: 'approve1' })
+      toast.loading(`Approving ${state.token1.symbol} for Helper...`, { id: 'approve1' })
       await ensureAllowance(publicClient, writeOpts, token1Addr, address, ARCDEX.liquidityHelper, amount1Wei)
       toast.dismiss('approve1')
 
-      toast.loading('Adicionando liquidez...', { id: 'addLiq' })
+      toast.loading('Adding liquidity...', { id: 'addLiq' })
       const hash = await writeContract({
         address: ARCDEX.liquidityHelper,
         abi: LIQUIDITY_HELPER_ABI,
@@ -206,7 +206,7 @@ export function ArcDexTestPool() {
       toast.success(
         () => (
           <span>
-            Liquidez adicionada.{' '}
+            Liquidity added.{' '}
             <a href={txUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
               Ver no {ARCDEX.explorerName}
             </a>
@@ -220,7 +220,7 @@ export function ArcDexTestPool() {
       await loadPairState()
     } catch (err: any) {
       toast.dismiss()
-      const reason = err?.shortMessage || err?.message || 'Erro ao adicionar liquidez'
+      const reason = err?.shortMessage || err?.message || 'Error adding liquidity'
       toast.error(reason)
       console.error('Error adding liquidity:', err)
     } finally {
@@ -251,7 +251,7 @@ export function ArcDexTestPool() {
 
           {isWrongChain && (
             <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-200 text-sm">
-              Conecte na <strong>Arc Testnet</strong> (Chain ID {ARCDEX.chainId}) para ver e adicionar liquidez.
+              Connect to <strong>Arc Testnet</strong> (Chain ID {ARCDEX.chainId}) to view and add liquidity.
             </div>
           )}
 
@@ -261,7 +261,7 @@ export function ArcDexTestPool() {
             {state && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <label className="text-xs text-slate-400">Par oficial USDC/EURC</label>
+                  <label className="text-xs text-slate-400">Official USDC/EURC pair</label>
                   {BigInt(state.reserve0) > 0n && BigInt(state.reserve1) > 0n && (
                     <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/40">
                       Pool Active
@@ -277,7 +277,7 @@ export function ArcDexTestPool() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-cyan-400 mt-1"
                 >
-                  Ver no {ARCDEX.explorerName}
+                  View on {ARCDEX.explorerName}
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
@@ -286,7 +286,7 @@ export function ArcDexTestPool() {
             {/* Token Addresses Info */}
             {state && (
               <div className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                <div className="text-xs text-slate-400 mb-2">Tokens do Pair (ERC20 reais):</div>
+                <div className="text-xs text-slate-400 mb-2">Pair tokens (real ERC20):</div>
                 <div className="text-xs font-mono space-y-1">
                   <div>USDC: <span className="text-cyan-400">{ARCDEX.usdc}</span></div>
                   <div>EURC: <span className="text-cyan-400">{ARCDEX.eurc}</span></div>
@@ -388,7 +388,7 @@ export function ArcDexTestPool() {
             <div className="bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Plus className="h-5 w-5" />
-                Adicionar Liquidez
+                Add Liquidity
               </h2>
 
               <div className="space-y-4">
@@ -441,7 +441,7 @@ export function ArcDexTestPool() {
                   ) : (
                     <>
                       <Plus className="h-5 w-5" />
-                      <span>Adicionar Liquidez</span>
+                      <span>Add Liquidity</span>
                     </>
                   )}
                 </button>
@@ -451,7 +451,7 @@ export function ArcDexTestPool() {
 
           {!isConnected && !isWrongChain && (
             <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700 rounded-lg p-6 text-center text-slate-400">
-              Conecte sua carteira para adicionar liquidez
+              Connect your wallet to add liquidity
             </div>
           )}
         </div>

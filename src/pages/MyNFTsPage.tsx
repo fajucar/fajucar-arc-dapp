@@ -172,7 +172,7 @@ export function MyNFTsPage() {
     }
 
     if (!FAJUCAR_COLLECTION_ADDRESS) {
-      setError('Contrato inválido. Verifique VITE_FAJUCAR_COLLECTION_ADDRESS (sem aspas ou espaços).')
+      setError('Invalid contract. Check VITE_FAJUCAR_COLLECTION_ADDRESS (no quotes or spaces).')
       setNfts([])
       setLoading(false)
       loadingRef.current = false
@@ -474,7 +474,7 @@ export function MyNFTsPage() {
         </div>
       ) : nfts.length === 0 ? (
         <div className="rounded-xl bg-slate-800/40 border border-slate-700/40 px-6 py-10 text-center">
-          <p className="text-white font-medium text-sm mb-1">Nenhum NFT encontrado</p>
+          <p className="text-white font-medium text-sm mb-1">No NFTs found</p>
           <p className="text-slate-500 text-xs mb-4">Se acabou de mintar, aguarde alguns segundos e clique em Refresh.</p>
           <button
             onClick={() => { setError(null); loadNFTsRef.current() }}

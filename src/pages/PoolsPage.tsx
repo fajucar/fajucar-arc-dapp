@@ -62,13 +62,13 @@ function PoolMarketCard({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500 hover:bg-cyan-600 text-white transition-colors"
           >
             <Plus className="h-4 w-4" />
-            Adicionar liquidez
+            Add liquidity
           </button>
           <button
             onClick={() => setDetailsOpen((o) => !o)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-slate-600 bg-slate-800/60 text-slate-200 hover:bg-slate-700/60 transition-colors"
           >
-            Ver detalhes
+            Details
             <ChevronDown className={`h-4 w-4 transition-transform ${detailsOpen ? 'rotate-180' : ''}`} />
           </button>
         </div>
@@ -90,13 +90,13 @@ function PoolMarketCard({
             </a>
           </div>
           <div>
-            <span className="text-slate-500">Reservas:</span> {formatNumber(pool.reserve0Formatted)} {pool.token0.symbol}, {formatNumber(pool.reserve1Formatted)} {pool.token1.symbol}
+            <span className="text-slate-500">Reserves:</span> {formatNumber(pool.reserve0Formatted)} {pool.token0.symbol}, {formatNumber(pool.reserve1Formatted)} {pool.token1.symbol}
           </div>
           <div>
             <span className="text-slate-500">Total supply:</span> {formatNumber(pool.totalSupplyFormatted)} LP
           </div>
           <a href={`${explorerBase}/address/${pool.pairAddress}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 pt-1">
-            Ver em {explorerName}
+            View on {explorerName}
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>
@@ -121,11 +121,11 @@ export function PoolsPage() {
 
   const handleAddLiquidity = async (pool: PoolMarketInfo) => {
     if (!address || !publicClient) {
-      toast.error('Conecte sua carteira')
+      toast.error('Connect your wallet')
       return
     }
     if (!amount0 || !amount1 || parseFloat(amount0) <= 0 || parseFloat(amount1) <= 0) {
-      toast.error('Informe valores válidos para ambos os tokens')
+      toast.error('Enter valid amounts for both tokens')
       return
     }
     setAddingLiquidity(true)
@@ -140,15 +140,15 @@ export function PoolsPage() {
         publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }) as Promise<bigint>,
         publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }) as Promise<bigint>,
       ])
-      if (b0 < amount0Wei) throw new Error(`Saldo insuficiente de ${pool.token0.symbol}`)
-      if (b1 < amount1Wei) throw new Error(`Saldo insuficiente de ${pool.token1.symbol}`)
+      if (b0 < amount0Wei) throw new Error(`Insufficient balance of ${pool.token0.symbol}`)
+      if (b1 < amount1Wei) throw new Error(`Insufficient balance of ${pool.token1.symbol}`)
       toast.loading(`Aprovando ${pool.token0.symbol}...`, { id: 'a0' })
       await ensureAllowance(publicClient, writeOpts, token0Addr, address, ARCDEX.liquidityHelper, amount0Wei)
       toast.dismiss('a0')
       toast.loading(`Aprovando ${pool.token1.symbol}...`, { id: 'a1' })
       await ensureAllowance(publicClient, writeOpts, token1Addr, address, ARCDEX.liquidityHelper, amount1Wei)
       toast.dismiss('a1')
-      toast.loading('Adicionando liquidez...', { id: 'add' })
+      toast.loading('Adding liquidity...', { id: 'add' })
       const txHash = await writeContractAsync({
         address: ARCDEX.liquidityHelper,
         abi: LIQUIDITY_HELPER_ABI,
@@ -157,13 +157,13 @@ export function PoolsPage() {
       })
       await publicClient.waitForTransactionReceipt({ hash: txHash })
       toast.dismiss('add')
-      toast.success('Liquidez adicionada')
+      toast.success('Liquidity added')
       setAmount0('')
       setAmount1('')
       setAddModalPool(null)
     } catch (err: unknown) {
       toast.dismiss()
-      toast.error(err instanceof Error ? err.message : 'Falha ao adicionar liquidez')
+      toast.error(err instanceof Error ? err.message : 'Failed to add liquidity')
     } finally {
       setAddingLiquidity(false)
     }
@@ -187,7 +187,7 @@ export function PoolsPage() {
 
         {isWrongChain && (
           <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm">
-            Conecte à <strong>Arc Testnet</strong> para visualizar os pools.
+            Connect to <strong>Arc Testnet</strong> to view pools.
           </div>
         )}
 
@@ -195,7 +195,7 @@ export function PoolsPage() {
           <div className="space-y-4">
             {/* Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-white">Pares disponíveis</h2>
+              <h2 className="text-lg font-semibold text-white">Available pairs</h2>
               <button
                 onClick={refetch}
                 disabled={loading}
@@ -215,13 +215,13 @@ export function PoolsPage() {
             {loading && (
               <div className="flex items-center gap-2 text-slate-400 py-12">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Carregando pools...
+                Loading pools...
               </div>
             )}
 
             {!loading && pools.length === 0 && !error && (
               <div className="p-8 rounded-2xl border border-slate-700/50 bg-slate-800/20 text-center">
-                <p className="text-slate-400">Nenhum pool disponível.</p>
+                <p className="text-slate-400">No pools available.</p>
               </div>
             )}
 
@@ -259,13 +259,13 @@ export function PoolsPage() {
                 className="w-full max-w-md rounded-2xl border border-slate-700/50 bg-slate-900/95 backdrop-blur-xl p-6 shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Adicionar liquidez — {addModalPool.pairName}</h3>
+                  <h3 className="text-lg font-semibold text-white">Add liquidity — {addModalPool.pairName}</h3>
                   <button onClick={() => setAddModalPool(null)} className="p-2 rounded-lg hover:bg-slate-800 transition-colors">
                     <X className="h-5 w-5 text-slate-400" />
                   </button>
                 </div>
                 {!isConnected ? (
-                  <p className="text-slate-400 text-sm">Conecte sua carteira para adicionar liquidez.</p>
+                  <p className="text-slate-400 text-sm">Connect your wallet to add liquidity.</p>
                 ) : (
                   <div className="space-y-4">
                     <div>
@@ -293,7 +293,7 @@ export function PoolsPage() {
                       disabled={addingLiquidity || isPending || isConfirming || !amount0 || !amount1}
                       className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      {addingLiquidity || isPending || isConfirming ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Adicionar'}
+                      {addingLiquidity || isPending || isConfirming ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Add'}
                     </button>
                   </div>
                 )}

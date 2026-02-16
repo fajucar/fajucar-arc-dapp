@@ -18,7 +18,7 @@ export function ConfigError() {
             <pre className="mt-2 bg-yellow-100 p-2 rounded text-xs overflow-x-auto">
 {`VITE_FAJUCAR_COLLECTION_ADDRESS=0x1499947A89Ef05B023176D31191BDC5CCF3d0B7E`}
             </pre>
-            <p className="mt-2">Reinicie o Vite (Ctrl+C e <code className="bg-yellow-100 px-1 rounded">npm run dev</code>) após alterar o .env.</p>
+            <p className="mt-2">Restart Vite (Ctrl+C and <code className="bg-yellow-100 px-1 rounded">npm run dev</code>) after changing .env.</p>
           </div>
         </div>
       </div>

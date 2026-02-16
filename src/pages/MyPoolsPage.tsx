@@ -71,7 +71,7 @@ function PositionCard({
             onClick={onManage}
             className="px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500 hover:bg-cyan-600 text-white transition-colors"
           >
-            Gerenciar
+            Manage
           </button>
           <button
             onClick={onRemove}
@@ -87,7 +87,7 @@ function PositionCard({
             rel="noopener noreferrer"
             className="px-3 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
           >
-            Ver no explorer
+            View on explorer
             <ExternalLink className="inline h-3.5 w-3.5 ml-1 align-middle" />
           </a>
         </div>
@@ -95,23 +95,23 @@ function PositionCard({
       <div className="flex items-center gap-2 mb-4">
         <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${isActive ? 'text-emerald-400' : 'text-slate-500'}`}>
           <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-          Ativa
+          Active
         </span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <div>
-          <div className="text-xs text-slate-400 mb-0.5">Posição LP</div>
+          <div className="text-xs text-slate-400 mb-0.5">LP position</div>
           <div className="text-base font-semibold text-white">{formatNumber(pool.lpBalanceFormatted, 3)} LP</div>
         </div>
         <div>
-          <div className="text-xs text-slate-400 mb-0.5">Tokens depositados</div>
+          <div className="text-xs text-slate-400 mb-0.5">Deposited tokens</div>
           <div className="text-sm text-slate-200">
             {formatNumber(pool.token0AmountFormatted, 3)} {pool.token0.symbol}<br />
             {formatNumber(pool.token1AmountFormatted, 3)} {pool.token1.symbol}
           </div>
         </div>
         <div>
-          <div className="text-xs text-slate-400 mb-0.5">Participação</div>
+          <div className="text-xs text-slate-400 mb-0.5">Share</div>
           <div className="text-base font-medium text-slate-200">{sharePct}</div>
         </div>
       </div>
@@ -127,7 +127,7 @@ function PositionCard({
           onClick={() => setDetailsOpen((o) => !o)}
           className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
         >
-          Detalhes
+          Details
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailsOpen ? 'rotate-180' : ''}`} />
         </button>
         {detailsOpen && (
@@ -148,7 +148,7 @@ function PositionCard({
               <a href={`${explorerBase}/address/${pool.token1.address}`} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300">{pool.token1.address}</a>
             </div>
             <a href={`${explorerBase}/address/${pool.pairAddress}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 pt-1">
-              Ver em {explorerName}
+              View on {explorerName}
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -176,18 +176,18 @@ export function MyPoolsPage() {
 
   useEffect(() => {
     if (isSuccess) {
-      toast.success('Transação confirmada')
+      toast.success('Transaction confirmed')
       refetch()
     }
   }, [isSuccess, refetch])
 
   const handleAddLiquidity = async (pool: typeof positions[0]) => {
     if (!address || !publicClient) {
-      toast.error('Conecte sua carteira')
+      toast.error('Connect your wallet')
       return
     }
     if (!amount0 || !amount1 || parseFloat(amount0) <= 0 || parseFloat(amount1) <= 0) {
-      toast.error('Informe valores válidos para ambos os tokens')
+      toast.error('Enter valid amounts for both tokens')
       return
     }
     setAddingLiquidity(true)
@@ -202,15 +202,15 @@ export function MyPoolsPage() {
         publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }) as Promise<bigint>,
         publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }) as Promise<bigint>,
       ])
-      if (b0 < amount0Wei) throw new Error(`Saldo insuficiente de ${pool.token0.symbol}`)
-      if (b1 < amount1Wei) throw new Error(`Saldo insuficiente de ${pool.token1.symbol}`)
-      toast.loading(`Aprovando ${pool.token0.symbol}...`, { id: 'a0' })
+      if (b0 < amount0Wei) throw new Error(`Insufficient balance of ${pool.token0.symbol}`)
+      if (b1 < amount1Wei) throw new Error(`Insufficient balance of ${pool.token1.symbol}`)
+      toast.loading(`Approving ${pool.token0.symbol}...`, { id: 'a0' })
       await ensureAllowance(publicClient, writeOpts, token0Addr, address, ARCDEX.liquidityHelper, amount0Wei)
       toast.dismiss('a0')
-      toast.loading(`Aprovando ${pool.token1.symbol}...`, { id: 'a1' })
+      toast.loading(`Approving ${pool.token1.symbol}...`, { id: 'a1' })
       await ensureAllowance(publicClient, writeOpts, token1Addr, address, ARCDEX.liquidityHelper, amount1Wei)
       toast.dismiss('a1')
-      toast.loading('Adicionando liquidez...', { id: 'add' })
+      toast.loading('Adding liquidity...', { id: 'add' })
       const txHash = await writeContractAsync({
         address: ARCDEX.liquidityHelper,
         abi: LIQUIDITY_HELPER_ABI,
@@ -219,14 +219,14 @@ export function MyPoolsPage() {
       })
       await publicClient.waitForTransactionReceipt({ hash: txHash })
       toast.dismiss('add')
-      toast.success('Liquidez adicionada')
+      toast.success('Liquidity added')
       setAmount0('')
       setAmount1('')
       setManagePool(null)
       setManageAction(null)
     } catch (err: unknown) {
       toast.dismiss()
-      toast.error(err instanceof Error ? err.message : 'Falha ao adicionar liquidez')
+      toast.error(err instanceof Error ? err.message : 'Failed to add liquidity')
     } finally {
       setAddingLiquidity(false)
     }
@@ -235,7 +235,7 @@ export function MyPoolsPage() {
   const handleRemoveLiquidity = async (pool: typeof positions[0]) => {
     setManageAction(null)
     if (!address || !publicClient) {
-      toast.error('Conecte sua carteira')
+      toast.error('Connect your wallet')
       return
     }
     setRemovingLiquidity(pool.pairAddress)
@@ -248,22 +248,22 @@ export function MyPoolsPage() {
         args: [address, pool.pairAddress],
       })) as bigint
       if (allowance < lpBalanceBigInt) {
-        toast.loading('Aprovando LP tokens...', { id: 'ap' })
+        toast.loading('Approving LP tokens...', { id: 'ap' })
         const apHash = await writeContractAsync({ address: pool.pairAddress, abi: ERC20_ABI, functionName: 'approve', args: [pool.pairAddress, lpBalanceBigInt] })
         await publicClient.waitForTransactionReceipt({ hash: apHash })
         toast.dismiss('ap')
       }
-      toast.loading('Removendo liquidez...', { id: 'rm' })
+      toast.loading('Removing liquidity...', { id: 'rm' })
       const trHash = await writeContractAsync({ address: pool.pairAddress, abi: ERC20_ABI, functionName: 'transfer', args: [pool.pairAddress, lpBalanceBigInt] })
       await publicClient.waitForTransactionReceipt({ hash: trHash })
       const burnHash = await writeContractAsync({ address: pool.pairAddress, abi: PAIR_BURN_ABI, functionName: 'burn', args: [address] })
       await publicClient.waitForTransactionReceipt({ hash: burnHash })
       toast.dismiss('rm')
-      toast.success('Liquidez removida')
+      toast.success('Liquidity removed')
       setManagePool(null)
     } catch (err: unknown) {
       toast.dismiss()
-      toast.error(err instanceof Error ? err.message : 'Erro ao remover liquidez')
+      toast.error(err instanceof Error ? err.message : 'Error removing liquidity')
     } finally {
       setRemovingLiquidity(null)
     }
@@ -272,11 +272,11 @@ export function MyPoolsPage() {
   if (!isConnected) {
     return (
       <>
-        <Helmet><title>Minhas posições - FajuARC</title></Helmet>
+        <Helmet><title>My positions - FajuARC</title></Helmet>
         <div className="py-12 px-4 max-w-3xl mx-auto text-center">
           <Wallet className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-white mb-2">Conecte sua carteira</h1>
-          <p className="text-slate-400">Conecte para ver e gerenciar suas posições de liquidez.</p>
+          <h1 className="text-xl font-semibold text-white mb-2">Connect your wallet</h1>
+          <p className="text-slate-400">Connect to view and manage your liquidity positions.</p>
         </div>
       </>
     )
@@ -285,23 +285,23 @@ export function MyPoolsPage() {
   return (
     <>
       <Helmet>
-        <title>Minhas posições - FajuARC</title>
-        <meta name="description" content="Suas posições de liquidez no FajuARC" />
+        <title>My positions - FajuARC</title>
+        <meta name="description" content="Your liquidity positions on FajuARC" />
       </Helmet>
 
       <div className="py-8 px-4 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-6">Minhas posições</h1>
+        <h1 className="text-2xl font-bold text-white mb-6">My positions</h1>
 
         {isWrongChain && (
           <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm">
-            Conecte à <strong>Arc Testnet</strong> para gerenciar suas posições.
+            Connect to <strong>Arc Testnet</strong> to manage your positions.
           </div>
         )}
 
         {!isWrongChain && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-white">Suas posições de LP</h2>
+              <h2 className="text-lg font-semibold text-white">Your LP positions</h2>
               <button
                 onClick={refetch}
                 disabled={loading}
@@ -322,13 +322,13 @@ export function MyPoolsPage() {
             {loading && (
               <div className="flex items-center gap-2 text-slate-400 py-12">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Carregando posições...
+                Loading positions...
               </div>
             )}
 
             {!loading && positions.length === 0 && (
               <div className="p-8 rounded-2xl border border-slate-700/50 bg-slate-800/20 text-center">
-                <p className="text-slate-400 mb-4">Você ainda não tem posições. Adicione liquidez em Pools.</p>
+                <p className="text-slate-400 mb-4">You have no positions yet. Add liquidity in Pools.</p>
                 <a href="/pools" className="text-cyan-400 hover:text-cyan-300 text-sm font-medium">
                   Pools →
                 </a>
@@ -385,14 +385,14 @@ export function MyPoolsPage() {
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-600 bg-slate-800/60 text-white font-medium hover:bg-slate-700/60 transition-colors"
                     >
                       <Plus className="h-5 w-5" />
-                      Adicionar liquidez
+                      Add liquidity
                     </button>
                     <button
                       onClick={() => setManageAction('remove')}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-red-500/40 bg-red-500/10 text-red-400 font-medium hover:bg-red-500/20 transition-colors"
                     >
                       <Trash2 className="h-5 w-5" />
-                      Remover liquidez
+                      Remove liquidity
                     </button>
                   </div>
                 ) : manageAction === 'add' ? (
@@ -424,13 +424,13 @@ export function MyPoolsPage() {
                         disabled={addingLiquidity || isPending || isConfirming || !amount0 || !amount1}
                         className="flex-1 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
                       >
-                        {addingLiquidity || isPending || isConfirming ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Adicionar'}
+                        {addingLiquidity || isPending || isConfirming ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Add'}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <p className="text-slate-400 text-sm">Você receberá {managePool.token0.symbol} e {managePool.token1.symbol} de volta.</p>
+                    <p className="text-slate-400 text-sm">You will receive {managePool.token0.symbol} and {managePool.token1.symbol} back.</p>
                     <div className="flex gap-3">
                       <button onClick={() => setManageAction(null)} className="flex-1 py-3 rounded-xl border border-slate-600 text-slate-300 font-medium hover:bg-slate-800 transition-colors">Voltar</button>
                       <button
@@ -438,7 +438,7 @@ export function MyPoolsPage() {
                         disabled={removingLiquidity === managePool.pairAddress || isPending || isConfirming}
                         className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
                       >
-                        {removingLiquidity === managePool.pairAddress || isPending || isConfirming ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Confirmar'}
+                        {removingLiquidity === managePool.pairAddress || isPending || isConfirming ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Confirm'}
                       </button>
                     </div>
                   </div>

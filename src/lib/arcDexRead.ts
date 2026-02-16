@@ -222,7 +222,7 @@ export async function readPairState(
     const foundPair = await getPairAddressUsdcEurc(publicClient)
     if (!foundPair) {
       throw new Error(
-        `Pair não existe. Crie o par na Factory: factory.createPair(${ARCDEX.usdc}, ${ARCDEX.eurc}) ou adicione liquidez ao pair existente.`
+        `Pair does not exist. Create the pair in Factory: factory.createPair(${ARCDEX.usdc}, ${ARCDEX.eurc}) or add liquidity to existing pair.`
       )
     }
     actualPairAddress = foundPair
@@ -375,7 +375,7 @@ export async function readPairState(
     
     if (errorMessage.includes('placeholder') || errorMessage.includes('Invalid token')) {
       throw new Error(
-        `Erro ao ler token do Pair. Verifique se o Pair foi criado com os endereços corretos: ` +
+        `Error reading token from Pair. Check that the Pair was created with correct addresses: ` +
         `USDC ${ARCDEX.usdc}, EURC ${ARCDEX.eurc}.`
       )
     }
@@ -572,12 +572,12 @@ export async function getUserPools(
     console.error('[getUserPools] Error fetching user pools:', error)
     if (msg.includes('allPairsLength') || msg.includes('revert')) {
       throw new Error(
-        'A Factory não suporta listagem de pares. Verifique se está usando a Factory correta (0x4b6F73...).'
+        'Factory does not support listing pairs. Check you are using the correct Factory (0x4b6F73...).'
       )
     }
     if (msg.includes('network') || msg.includes('connection')) {
-      throw new Error('Erro de rede. Verifique sua conexão e tente novamente.')
+      throw new Error('Network error. Check your connection and try again.')
     }
-    throw new Error(`Falha ao carregar pools: ${msg}`)
+    throw new Error(`Failed to load pools: ${msg}`)
   }
 }

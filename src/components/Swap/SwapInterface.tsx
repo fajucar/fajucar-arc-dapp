@@ -189,7 +189,7 @@ function extractRevertReason(error: any): string {
       const rootCause = error.walk()
       if (rootCause && rootCause !== error) {
         const rootMsg = extractRevertReason(rootCause)
-        if (rootMsg && rootMsg !== 'Erro desconhecido' && rootMsg.length > 3) {
+        if (rootMsg && rootMsg !== 'Unknown error' && rootMsg.length > 3) {
           return rootMsg
         }
       }
@@ -226,7 +226,7 @@ function extractRevertReason(error: any): string {
     error?.data?.message ||
     error?.details ||
     error?.toString() ||
-    'Erro desconhecido'
+    'Unknown error'
 
   // Converter para string se necessário
   errorMsg = String(errorMsg)
@@ -283,7 +283,7 @@ function extractRevertReason(error: any): string {
   }
 
   // Se a mensagem contém informações úteis mas não foi extraída, retornar ela mesma
-  if (errorMsg && errorMsg.length > 5 && errorMsg !== 'Erro desconhecido') {
+  if (errorMsg && errorMsg.length > 5 && errorMsg !== 'Unknown error') {
     // Remover partes comuns que não são úteis
     const cleaned = errorMsg
       .replace(/^Error:\s*/i, '')
@@ -296,7 +296,7 @@ function extractRevertReason(error: any): string {
   }
 
   // Fallback final: retornar mensagem original se tiver conteúdo útil
-  return errorMsg && errorMsg.length > 2 ? errorMsg : 'Erro desconhecido na simulação'
+  return errorMsg && errorMsg.length > 2 ? errorMsg : 'Unknown simulation error'
 }
 
 // Factory ABI mínimo (getPair)
@@ -566,13 +566,13 @@ export function SwapInterface() {
             token0Addr = String(t0)
             token1Addr = String(t1)
             if (reserves[0] === 0n || reserves[1] === 0n) {
-              warning = 'Pool sem liquidez'
+              warning = 'Pool has no liquidity'
             }
           } catch {
-            warning = 'Sem liquidez ou par inexistente (erro ao ler reserves).'
+            warning = 'No liquidity or pair does not exist (error reading reserves).'
           }
         } else {
-          warning = 'Sem liquidez ou par inexistente (pair = address(0)).'
+          warning = 'No liquidity or pair does not exist (pair = address(0)).'
         }
         let balanceUser = '0', allowanceUser = '0'
         if (address) {
@@ -777,30 +777,30 @@ export function SwapInterface() {
 
   const handleApprove = async () => {
     if (!isConnected || !address) {
-      toast.error('Conecte a carteira primeiro.')
+      toast.error('Connect wallet first.')
       return
     }
     if (isWrongChain && switchChain) {
       try {
-        toast.loading('Trocando para a rede Arc...')
+        toast.loading('Switching to Arc Testnet...')
         await switchChain({ chainId: ARC_TESTNET_CHAIN_ID })
         toast.dismiss()
-        toast.success('Rede alterada. Clique em "Approve" novamente para aprovar.')
+        toast.success('Network changed. Click "Approve" again to approve.')
         return
       } catch (e) {
         toast.dismiss()
-        toast.error('Troque manualmente para a rede Arc no MetaMask e tente de novo.')
+        toast.error('Switch manually to Arc Testnet in MetaMask and try again.')
         return
       }
     }
     if (!tokenFrom) {
-      toast.error('Selecione o token From.')
+      toast.error('Select the From token.')
       return
     }
     // Router sempre existe (vem do JSON)
 
     setLastWriteType('approve')
-    const toastId = toast.loading('Abrindo carteira para assinar a aprovação...')
+    const toastId = toast.loading('Opening wallet to sign approval...')
     try {
       await writeContract({
         address: tokenFrom.address,
@@ -809,15 +809,15 @@ export function SwapInterface() {
         args: [DEX_ROUTER_ADDRESS, maxUint256],
       })
       toast.dismiss(toastId)
-      toast.loading('Aguardando confirmação do approve...', { id: 'approve-pending' })
+      toast.loading('Waiting for approval confirmation...', { id: 'approve-pending' })
     } catch (err: any) {
       toast.dismiss(toastId)
       setLastWriteType(null)
       const errorMsg = err?.message || err?.shortMessage || ''
       if (errorMsg.includes('rejected') || errorMsg.includes('denied') || errorMsg.includes('User denied')) {
-        toast.error('Aprovação cancelada na carteira.')
+        toast.error('Approval cancelled in wallet.')
       } else {
-        toast.error(errorMsg || 'Falha na aprovação. Tente novamente.')
+        toast.error(errorMsg || 'Approval failed. Try again.')
       }
     }
   }
@@ -837,51 +837,51 @@ export function SwapInterface() {
 
     // Validações básicas
     if (!isConnected || !address) {
-      toast.error('Conecte a carteira primeiro.')
+      toast.error('Connect wallet first.')
       return
     }
     if (isWrongChain && switchChain) {
       try {
-        toast.loading('Trocando para a rede Arc...')
+        toast.loading('Switching to Arc Testnet...')
         await switchChain({ chainId: ARC_TESTNET_CHAIN_ID })
         toast.dismiss()
-        toast.success('Rede alterada. Clique em Swap novamente (a carteira abrirá para aprovar o token).')
+        toast.success('Network changed. Click Swap again (wallet will open to approve the token).')
         return
       } catch (e) {
         toast.dismiss()
-        toast.error('Troque manualmente para a rede Arc no MetaMask e tente de novo.')
+        toast.error('Switch manually to Arc Testnet in MetaMask and try again.')
         return
       }
     }
     if (!tokenFrom || !tokenTo) {
-      toast.error('Selecione os tokens From e To.')
+      toast.error('Select From and To tokens.')
       return
     }
     if (!amountFrom || parseFloat(amountFrom) <= 0) {
-      toast.error('Digite um valor válido.')
+      toast.error('Enter a valid amount.')
       return
     }
     if (!amountTo || parseFloat(amountTo) <= 0) {
-      toast.error('Aguardando cálculo do valor de saída...')
+      toast.error('Waiting for output amount calculation...')
       return
     }
 
     // amountIn em RAW (bigint): parseUnits com decimais reais do token (USDC=6, EURC=6). NUNCA parseEther/18.
     const amountIn = safeParseUnits(amountFrom, tokenFrom.decimals)
     if (amountIn == null || amountIn <= 0n) {
-      toast.error('Valor inválido.')
+      toast.error('Invalid amount.')
       return
     }
 
     if (!publicClient) {
-      toast.error('Erro: publicClient não disponível.')
+      toast.error('Error: publicClient not available.')
       return
     }
 
     // Approve para o Router (spender = router). Reutiliza ensureAllowance.
     if (needsApproval && DEX_ROUTER_ADDRESS) {
       setLastWriteType('approve')
-      const approveToast = toast.loading(`Aprovar ${tokenFrom.symbol} para Router...`)
+      const approveToast = toast.loading(`Approving ${tokenFrom.symbol} for Router...`)
       try {
         await ensureAllowance(
           publicClient,
@@ -893,12 +893,12 @@ export function SwapInterface() {
         )
         await refetchAllowance()
         toast.dismiss(approveToast)
-        toast.success('Token aprovado. Executando swap...')
+        toast.success('Token approved. Executing swap...')
       } catch (approveErr: any) {
         toast.dismiss(approveToast)
-        const msg = approveErr?.shortMessage ?? approveErr?.message ?? 'Falha na aprovação.'
+        const msg = approveErr?.shortMessage ?? approveErr?.message ?? 'Approval failed.'
         if (msg.includes('rejected') || msg.includes('denied')) {
-          toast.error('Aprovação cancelada na carteira.')
+          toast.error('Approval cancelled in wallet.')
         } else {
           toast.error(msg)
         }
@@ -922,7 +922,7 @@ export function SwapInterface() {
       CONFIG_FACTORY.toLowerCase() === ZERO_ADDRESS.toLowerCase()
     ) {
       toast.error(
-        `Router ou Factory não configurado. Router: ${DEX_ROUTER_ADDRESS} (len ${DEX_ROUTER_ADDRESS.length}) | Factory: ${CONFIG_FACTORY} (len ${CONFIG_FACTORY.length}). Verifique .env e src/config/arcTestnet.ts`
+        `Router or Factory not configured. Router: ${DEX_ROUTER_ADDRESS} (len ${DEX_ROUTER_ADDRESS.length}) | Factory: ${CONFIG_FACTORY} (len ${CONFIG_FACTORY.length}). Check .env and src/config/arcTestnet.ts`
       )
       return
     }
@@ -948,7 +948,7 @@ export function SwapInterface() {
     const ZERO = '0x0000000000000000000000000000000000000000' as `0x${string}`
 
     // 1) Resolver par com liquidez (tentar EURC alternativo se getPair retornar zero)
-    toast.loading('Verificando liquidez...', { id: 'swap-pending' })
+    toast.loading('Checking liquidity...', { id: 'swap-pending' })
     let pairAddress: `0x${string}`
     let path: `0x${string}`[]
     let reserveIn: bigint
@@ -978,7 +978,7 @@ export function SwapInterface() {
 
       if (!pairAddress || pairAddress === ZERO) {
         toast.dismiss('swap-pending')
-        toast.error('Par não encontrado. Crie o par na Factory ou acesse Pools para adicionar liquidez.')
+        toast.error('Pair not found. Create the pair in Factory or go to Pools to add liquidity.')
         return
       }
 
@@ -1002,7 +1002,7 @@ export function SwapInterface() {
 
       if (reserves[0] === 0n || reserves[1] === 0n) {
         toast.dismiss('swap-pending')
-        toast.error('Pool sem liquidez. Adicione liquidez em Pools e tente de novo.')
+        toast.error('Pool has no liquidity. Add liquidity in Pools and try again.')
         return
       }
 
@@ -1053,13 +1053,13 @@ export function SwapInterface() {
         toast.dismiss('swap-pending')
         const errMsg = e?.shortMessage || e?.message || String(e)
         console.error('[Swap] Erro ao ler router.factory():', e)
-        toast.error('Router inválido ou rede errada: ' + (errMsg.slice(0, 80) || 'verifique src/config/arcTestnet.ts'))
+        toast.error('Invalid Router or wrong network: ' + (errMsg.slice(0, 80) || 'check src/config/arcTestnet.ts'))
         return
       }
       
       if (routerFactory.toLowerCase() !== CONFIG_FACTORY.toLowerCase()) {
         toast.dismiss('swap-pending')
-        toast.error('Router usa outra Factory. Esperado: ' + CONFIG_FACTORY.slice(0, 10) + '... Atual: ' + String(routerFactory).slice(0, 10) + '...')
+        toast.error('Router uses different Factory. Expected: ' + CONFIG_FACTORY.slice(0, 10) + '... Current: ' + String(routerFactory).slice(0, 10) + '...')
         return
       }
       
@@ -1095,7 +1095,7 @@ export function SwapInterface() {
       const msg = pairErr?.shortMessage || pairErr?.message || String(pairErr)
       console.error('[Swap] Erro ao verificar par/reservas:', pairErr)
       const userMsg = msg.length > 100 ? msg.slice(0, 100) + '...' : msg
-      toast.error(userMsg || 'Falha ao ler par ou reservas. Confira Factory e rede.')
+      toast.error(userMsg || 'Failed to read pair or reserves. Check Factory and network.')
       return
     }
 
@@ -1121,7 +1121,7 @@ export function SwapInterface() {
       amountOut = numerator / denominator
       if (amountOut === 0n) {
         toast.dismiss('swap-pending')
-        toast.error('Não foi possível calcular valor de saída. Tente um valor menor.')
+        toast.error('Could not calculate output amount. Try a smaller amount.')
         return
       }
       // 1% slippage: amountOut * 99 / 100
@@ -1176,7 +1176,7 @@ export function SwapInterface() {
       // Simular ANTES de enviar: capturar revert reason e exibir no toast / Debug Panel
       setLastSimError(null)
       setLastSimErrorDetail(null)
-      toast.loading('Simulando transação...', { id: 'swap-pending' })
+      toast.loading('Simulating transaction...', { id: 'swap-pending' })
       
       // Verificar allowance antes da simulação
       let currentAllowanceCheck: bigint | null = null
@@ -1194,13 +1194,13 @@ export function SwapInterface() {
         })
         if (currentAllowanceCheck < amountIn) {
           toast.dismiss('swap-pending')
-          toast.error(`Approve insuficiente. Allowance: ${formatUnits(currentAllowanceCheck, tokenFrom.decimals)} ${tokenFrom.symbol}, necessário: ${amountFrom} ${tokenFrom.symbol}. Clique em "Approve USDC" primeiro.`)
+          toast.error(`Insufficient allowance. Allowance: ${formatUnits(currentAllowanceCheck, tokenFrom.decimals)} ${tokenFrom.symbol}, required: ${amountFrom} ${tokenFrom.symbol}. Click "Approve USDC" first.`)
           return
         }
       } catch (allowanceErr: any) {
         console.warn('[Swap] Erro ao verificar allowance:', allowanceErr)
         toast.dismiss('swap-pending')
-        toast.error('Erro ao verificar approve. Tente novamente.')
+        toast.error('Error verifying approval. Try again.')
         return
       }
       
@@ -1350,12 +1350,12 @@ export function SwapInterface() {
               const code = Number(decoded.args[0])
               const panicMsg: Record<number, string> = {
                 0x11: 'Overflow/underflow',
-                0x12: 'Divisão por zero',
-                0x21: 'Assert falhou',
-                0x31: 'Underflow em conversão',
-                0x32: 'Conversão para enum inválida',
-                0x41: 'Acesso a memória fora dos limites',
-                0x51: 'Array vazio',
+                0x12: 'Division by zero',
+                0x21: 'Assert failed',
+                0x31: 'Conversion overflow/underflow',
+                0x32: 'Invalid enum conversion',
+                0x41: 'Memory access out of bounds',
+                0x51: 'Empty array',
               }
               decodedError = panicMsg[code] || `Panic(${code})`
             } else {
@@ -1378,17 +1378,17 @@ export function SwapInterface() {
                        rootCause?.message ||
                        simErr?.shortMessage ||
                        simErr?.message ||
-                       'Erro na simulação'
+                       'Simulation error'
 
         // Mensagens específicas por tipo de revert do contrato
         if (decodedError && /ArcDEX:\s*TRANSFER_FROM_FAILED|TRANSFER_FROM_FAILED|TRANSFER_FAILED/i.test(decodedError)) {
-          toastMsg = 'Router on-chain sem TransferHelper (bytecode antigo). Redeploy com docs/ArcDEXRouter_Remix.sol e atualize o router em arcTestnet.ts.'
+          toastMsg = 'Router on-chain without TransferHelper (old bytecode). Redeploy with docs/ArcDEXRouter_Remix.sol and update router in arcTestnet.ts.'
         } else if (decodedError && /ArcDEX:\s*PAIR_NOT_EXIST|PAIR_NOT_EXIST/i.test(decodedError)) {
-          toastMsg = 'Par não encontrado na Factory. O Router usa Factory.getPair(). Confira se o par existe em Pools.'
+          toastMsg = 'Pair not found in Factory. Router uses Factory.getPair(). Check if the pair exists in Pools.'
         } else if (decodedError && /ArcDEX:\s*INSUFFICIENT_OUTPUT_AMOUNT/i.test(decodedError)) {
-          toastMsg = 'Slippage: valor mínimo de saída não atingido. Aumente a tolerância de slippage ou reduza o valor e tente de novo.'
+          toastMsg = 'Slippage: minimum output not reached. Increase slippage tolerance or reduce amount and try again.'
         } else if (decodedError && /ArcDEX:\s*EXPIRED/i.test(decodedError)) {
-          toastMsg = 'Deadline expirado. Clique em Swap novamente.'
+          toastMsg = 'Deadline expired. Click Swap again.'
         }
 
         if (simErr?.details) {
@@ -1409,7 +1409,7 @@ export function SwapInterface() {
               args: [address, DEX_ROUTER_ADDRESS],
             })) as bigint
             if (recheckAllowance < amountIn) {
-              toastMsg = `Aprove o token para este Router (${DEX_ROUTER_ADDRESS.slice(0, 8)}...). Clique em "Approve USDC" e tente o Swap de novo.`
+              toastMsg = `Approve the token for this Router (${DEX_ROUTER_ADDRESS.slice(0, 8)}...). Click "Approve USDC" and try Swap again.`
             } else {
               // Allowance OK mas revert genérico: não assumir transferFrom; sugerir slippage e reservas
               try {
@@ -1420,7 +1420,7 @@ export function SwapInterface() {
                   args: [amountIn, path],
                 })
                 // getAmountsOut passou; o revert é no swap em si (transfer ou pair). Mensagem neutra + dicas.
-                toastMsg = 'Revert na simulação (motivo não decodificado). Tente: 1) Redeploy do Router com docs/ArcDEXRouter_Remix.sol e atualize arcTestnet.ts 2) Aumentar slippage para 2% 3) Conferir reservas no Debug Panel.'
+                toastMsg = 'Simulation revert (reason not decoded). Try: 1) Redeploy Router with docs/ArcDEXRouter_Remix.sol and update arcTestnet.ts 2) Increase slippage to 2% 3) Check reserves in Debug Panel.'
                 refetchAllowance()
               } catch (getAmountsErr: any) {
                 let decodedRouterMsg = ''
@@ -1434,19 +1434,19 @@ export function SwapInterface() {
                     if (dec.errorName === 'Error' && dec.args?.[0]) {
                       decodedRouterMsg = String(dec.args[0])
                     } else if (dec.errorName === 'Panic' && dec.args?.[0] !== undefined) {
-                      decodedRouterMsg = `Panic(${dec.args[0]}). Possível overflow ou par sem liquidez.`
+                      decodedRouterMsg = `Panic(${dec.args[0]}). Possible overflow or pair with no liquidity.`
                     }
                   } catch { /* ignorar */ }
                 }
                 if (decodedRouterMsg) {
                   toastMsg = `Router: ${decodedRouterMsg}`
                 } else if (toastMsg.toLowerCase().includes('reverted') || toastMsg.length < 20) {
-                  toastMsg = `Simulação falhou (swap revertido). Veja o "Detalhe técnico" na caixa vermelha abaixo. Possíveis causas: par sem liquidez, slippage alto ou approve insuficiente.`
+                  toastMsg = `Simulation failed (swap reverted). See "Technical detail" in the red box below. Possible causes: pair with no liquidity, high slippage, or insufficient approval.`
                 }
               }
             }
           } catch {
-            toastMsg = 'Transação revertida. Veja o detalhe técnico na caixa vermelha abaixo ou use Tenderly/Remix para debugar on-chain.'
+            toastMsg = 'Transaction reverted. See technical detail in the red box below or use Tenderly/Remix to debug on-chain.'
           }
         }
         
@@ -1464,7 +1464,7 @@ export function SwapInterface() {
         to: address,
         deadline: deadline.toString(),
       })
-      toast.loading('Abrindo carteira para confirmar o swap...', { id: 'swap-pending' })
+      toast.loading('Opening wallet to confirm swap...', { id: 'swap-pending' })
       let txHash: `0x${string}`
       try {
         txHash = await writeContract({
@@ -1498,7 +1498,7 @@ export function SwapInterface() {
                        rootCause?.message || 
                        writeErr?.shortMessage || 
                        writeErr?.message || 
-                       'Erro ao enviar transação'
+                       'Error sending transaction'
         
         // Adicionar detalhes se disponíveis
         if (writeErr?.details) {
@@ -1541,12 +1541,12 @@ export function SwapInterface() {
                   decodedDetail = decodedMsg
                   toastMsg = decodedMsg
                   if (/ArcDEX:\s*TRANSFER_FAILED|TRANSFER_FAILED/i.test(decodedMsg)) {
-                    toastMsg = 'Falha no transferFrom (token não transferido para o par). Aprove o token para ESTE Router e tente de novo.'
+                    toastMsg = 'transferFrom failed (token not transferred to pair). Approve the token for THIS Router and try again.'
                     refetchAllowance()
                   } else if (/INSUFFICIENT_OUTPUT_AMOUNT|INSUFFICIENT_OUTPUT/i.test(decodedMsg)) {
-                    toastMsg = 'Slippage: valor mínimo de saída não atingido. Aumente a tolerância de slippage e tente de novo.'
+                    toastMsg = 'Slippage: minimum output not reached. Increase slippage tolerance and try again.'
                   } else if (/EXPIRED/i.test(decodedMsg)) {
-                    toastMsg = 'Deadline expirado. Clique em Swap novamente.'
+                    toastMsg = 'Deadline expired. Click Swap again.'
                   }
                 }
               } catch { /* ignorar decodificação */ }
@@ -1556,7 +1556,7 @@ export function SwapInterface() {
 
         // Se ainda genérico, adicionar dicas
         if (toastMsg.toLowerCase().includes('reverted') && !toastMsg.match(/ArcDEX:|EXPIRED|INSUFFICIENT|TRANSFER|INVALID|Panic|Slippage|Deadline|Aprove|approve/i)) {
-          toastMsg = `Transação revertida. ${toastMsg.length < 60 ? toastMsg + ' — Verifique: 1) Token aprovado para o Router atual? 2) Slippage 3) Liquidez no par.' : toastMsg}`
+          toastMsg = `Transaction reverted. ${toastMsg.length < 60 ? toastMsg + ' — Check: 1) Token approved for current Router? 2) Slippage 3) Pool liquidity.' : toastMsg}`
         }
 
         setLastSimError(toastMsg)
@@ -1567,7 +1567,7 @@ export function SwapInterface() {
 
       console.log('SWAP_TX_HASH', txHash)
       toast.dismiss('swap-pending')
-      toast.loading(`Transação enviada. Aguardando confirmação...`, { id: 'swap-confirming' })
+      toast.loading(`Transaction sent. Waiting for confirmation...`, { id: 'swap-confirming' })
       
       // Aguardar confirmação
       if (publicClient) {
@@ -1586,9 +1586,9 @@ export function SwapInterface() {
             toast.success(
               () => (
                 <span>
-                  Swap confirmado na blockchain!{' '}
+                  Swap confirmed on-chain!{' '}
                   <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
-                    Ver no {ARCDEX.explorerName}
+                    View on {ARCDEX.explorerName}
                   </a>
                 </span>
               ),
@@ -1615,7 +1615,7 @@ export function SwapInterface() {
           } else {
             // Transação foi revertida - tentar obter erro real via simulação
             console.error('SWAP_ERROR_RAW - Transaction reverted', receipt)
-            let revertReason = 'Transação revertida na blockchain'
+            let revertReason = 'Transaction reverted on-chain'
             
             try {
               // Simular novamente para capturar o erro real
@@ -1637,15 +1637,15 @@ export function SwapInterface() {
             }
 
             const explorerUrl = `${ARCDEX.explorer}/tx/${txHash}`
-            setLastSimError(`Swap revertido na blockchain: ${revertReason}`)
-            setLastSimErrorDetail(`Tx hash: ${txHash}. Veja o motivo no Explorer: ${explorerUrl}`)
-            toast.error(`Swap falhou: ${revertReason}. Ver detalhes no Explorer.`, { duration: 12000 })
+            setLastSimError(`Swap reverted on-chain: ${revertReason}`)
+            setLastSimErrorDetail(`Tx hash: ${txHash}. See reason on Explorer: ${explorerUrl}`)
+            toast.error(`Swap failed: ${revertReason}. View details on Explorer.`, { duration: 12000 })
           }
         } catch (waitErr: any) {
           toast.dismiss('swap-confirming')
           console.error('SWAP_ERROR_RAW - Error waiting for receipt', waitErr)
-          const errorMsg = extractRevertReason(waitErr) || 'Erro desconhecido ao aguardar confirmação'
-          toast.error(`Erro ao aguardar confirmação: ${errorMsg}`)
+          const errorMsg = extractRevertReason(waitErr) || 'Unknown error waiting for confirmation'
+          toast.error(`Error waiting for confirmation: ${errorMsg}`)
         }
       }
     } catch (err: any) {
@@ -1656,7 +1656,7 @@ export function SwapInterface() {
       console.log('ERRO handleSwap (catch geral):', err, err?.shortMessage, err?.details, err?.cause, err?.message)
       
       // Construir mensagem para toast usando informações do erro
-      let toastMsg = err?.shortMessage || err?.message || 'Erro no swap'
+      let toastMsg = err?.shortMessage || err?.message || 'Swap error'
       
       // Adicionar detalhes se disponíveis
       if (err?.details) {
@@ -1668,7 +1668,7 @@ export function SwapInterface() {
       
       // Detectar cancelamento do usuário
       if (toastMsg.includes('User rejected') || toastMsg.includes('User denied') || toastMsg.includes('rejected') || toastMsg.includes('denied') || err?.code === 4001) {
-        toast.error('Transação cancelada pelo usuário.')
+        toast.error('Transaction cancelled by user.')
         return
       }
       
@@ -1718,9 +1718,9 @@ export function SwapInterface() {
 
     if (type === 'approve') {
       refetchAllowance()
-      toast.success('✅ Approve confirmado! Agora clique em "2. Swap".')
+      toast.success('✅ Approval confirmed! Now click "2. Swap".')
     } else if (type === 'swap') {
-      toast.success('✅ Swap executado com sucesso!')
+      toast.success('✅ Swap executed successfully!')
       setAmountFrom('')
       setAmountTo('')
       if (address && publicClient && tokenFrom) {
@@ -1734,7 +1734,7 @@ export function SwapInterface() {
         }).catch(console.error)
       }
     } else {
-      toast.success('Transação confirmada!')
+      toast.success('Transaction confirmed!')
       setAmountFrom('')
       setAmountTo('')
       if (address && publicClient && tokenFrom) {
@@ -1764,7 +1764,7 @@ export function SwapInterface() {
     ? (parseFloat(amountTo) * (1 - slippage / 100)).toFixed(6)
     : null
   // Botão Swap habilitado quando: rede correta, valores válidos, não está carregando
-  const poolSemLiquidez = debugData?.warning === 'Pool sem liquidez'
+  const poolSemLiquidez = debugData?.warning === 'Pool has no liquidity'
   const canSwap = !isWrongChain && routerSupportsPrecompile !== false && !poolSemLiquidez && amountFrom && amountTo && parseFloat(amountFrom) > 0 && parseFloat(amountTo) > 0 && !isLoading
   const isApproveLoading = (isPending || isConfirming) && lastWriteType === 'approve'
   const isSwapLoading = (isPending || isConfirming) && lastWriteType === 'swap'
@@ -1783,15 +1783,15 @@ export function SwapInterface() {
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1 text-xs text-red-200/90">
-              <span className="font-medium">Rede incorreta.</span>
-              {' '}Conecte na <strong>Arc Testnet</strong> (Chain ID 5042002) para usar o Swap.
+              <span className="font-medium">Wrong network.</span>
+              {' '}Connect to <strong>Arc Testnet</strong> (Chain ID 5042002) to use Swap.
             </div>
             <button
               type="button"
               onClick={() => setShowNetworkModal(true)}
               className="shrink-0 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-semibold px-3 py-1.5 transition-colors"
             >
-              Trocar rede
+              Switch network
             </button>
           </div>
         </>
@@ -1802,8 +1802,8 @@ export function SwapInterface() {
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 flex items-start gap-2">
           <AlertCircle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-amber-200/90">
-            <span className="font-medium">Pool sem liquidez.</span>
-            {' '}Adicione liquidez em Pools e tente de novo.
+            <span className="font-medium">Pool has no liquidity.</span>
+            {' '}Add liquidity in Pools and try again.
           </div>
         </div>
       )}
@@ -1814,23 +1814,23 @@ export function SwapInterface() {
           <div className="flex items-start gap-2">
             <AlertCircle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-amber-200 text-sm">Router na versão antiga</p>
+              <p className="font-medium text-amber-200 text-sm">Router on legacy version</p>
               <p className="text-xs text-amber-200/90 mt-1">
-                O contrato no endereço configurado retornou <code className="bg-slate-800 px-1 rounded">supportsPrecompileTokens() = false</code>. O swap com USDC (precompile) pode reverter.
+                The contract at the configured address returned <code className="bg-slate-800 px-1 rounded">supportsPrecompileTokens() = false</code>. Swap with USDC (precompile) may revert.
               </p>
               <p className="text-xs text-slate-300 mt-1 font-mono break-all">
-                Router em uso: <span className="text-cyan-300">{DEX_ROUTER_ADDRESS}</span>
+                Router in use: <span className="text-cyan-300">{DEX_ROUTER_ADDRESS}</span>
               </p>
               <p className="text-xs text-amber-200/90 mt-2">
-                Se esse já é o endereço que você deployou com <code className="bg-slate-800 px-1 rounded">docs/ArcDEXRouter_Remix.sol</code>, confira no Remix (aba &quot;Read&quot;) ou no block explorer: o contrato nesse endereço deve ter a função <code className="bg-slate-800 px-1 rounded">supportsPrecompileTokens()</code> e retornar <strong>true</strong>. Se não existir ou retornar false, o deploy foi feito com a versão antiga do contrato — faça um novo deploy com o arquivo completo do Remix.
+                If this is the address you deployed with <code className="bg-slate-800 px-1 rounded">docs/ArcDEXRouter_Remix.sol</code>, check in Remix (&quot;Read&quot; tab) or on the block explorer: the contract at this address must have <code className="bg-slate-800 px-1 rounded">supportsPrecompileTokens()</code> and return <strong>true</strong>. If it does not exist or returns false, the deploy used the old contract version — do a new deploy with the complete Remix file.
               </p>
-              <p className="text-xs text-amber-200/90 mt-2 font-medium">O que fazer:</p>
+              <p className="text-xs text-amber-200/90 mt-2 font-medium">What to do:</p>
               <ol className="text-xs text-amber-200/90 list-decimal list-inside mt-1 space-y-1">
-                <li>Deploy do Router com <code className="bg-slate-800 px-1 rounded">docs/ArcDEXRouter_Remix.sol</code> no Remix (Factory: <code className="bg-slate-800 px-1 rounded">{CONFIG_FACTORY}</code>).</li>
-                <li>Atualize <code className="bg-slate-800 px-1 rounded">src/config/arcTestnet.ts</code> → <code className="bg-slate-800 px-1 rounded">addresses.router</code> com o endereço do novo contrato.</li>
-                <li>Recarregue a página e aprove USDC para o novo Router; depois tente o swap.</li>
+                <li>Deploy Router with <code className="bg-slate-800 px-1 rounded">docs/ArcDEXRouter_Remix.sol</code> in Remix (Factory: <code className="bg-slate-800 px-1 rounded">{CONFIG_FACTORY}</code>).</li>
+                <li>Update <code className="bg-slate-800 px-1 rounded">src/config/arcTestnet.ts</code> → <code className="bg-slate-800 px-1 rounded">addresses.router</code> with the new contract address.</li>
+                <li>Reload the page and approve USDC for the new Router; then try the swap.</li>
               </ol>
-              <p className="text-xs text-slate-400 mt-2">Detalhes: <code className="bg-slate-800 px-1 rounded">docs/O_QUE_ESTAVA_FALTANDO_SWAP.md</code></p>
+              <p className="text-xs text-slate-400 mt-2">Details: <code className="bg-slate-800 px-1 rounded">docs/O_QUE_ESTAVA_FALTANDO_SWAP.md</code></p>
             </div>
           </div>
         </div>
@@ -1978,10 +1978,10 @@ export function SwapInterface() {
           {(isSwapLoading || isApproveLoading) ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{isPending ? 'Aguardando assinatura...' : isApproveLoading ? 'Confirmando aprovação...' : 'Executando swap...'}</span>
+              <span>{isPending ? 'Waiting for signature...' : isApproveLoading ? 'Confirming approval...' : 'Executing swap...'}</span>
             </>
           ) : (
-            <span>{needsApproval ? `Aprovar e Swap (${tokenFrom.symbol})` : 'Swap'}</span>
+            <span>{needsApproval ? `Approve and Swap (${tokenFrom.symbol})` : 'Swap'}</span>
           )}
         </motion.button>
       )}
@@ -2038,7 +2038,7 @@ export function SwapInterface() {
           className="flex items-center gap-2 text-green-400 text-sm"
         >
           <CheckCircle2 className="h-4 w-4" />
-          <span>Transação confirmada.</span>
+          <span>Transaction confirmed.</span>
         </motion.div>
       )}
     </div>

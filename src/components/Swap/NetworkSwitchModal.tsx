@@ -30,21 +30,21 @@ export function NetworkSwitchModal({ isOpen, onClose }: NetworkSwitchModalProps)
   const handleSwitchChain = async () => {
     try {
       await switchChain({ chainId: ARC_CHAIN_ID })
-      toast.success('Trocando para Arc Testnet...')
+      toast.success('Switching to Arc Testnet...')
       onClose()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       if (/user rejected|user denied/i.test(msg)) {
-        toast.error('Você recusou a troca de rede.')
+        toast.error('You rejected the network switch.')
       } else {
-        toast.error('Não foi possível trocar a rede. Tente adicionar a rede.')
+        toast.error('Could not switch network. Try adding the network.')
       }
     }
   }
 
   const handleAddChain = async () => {
     if (!walletClient) {
-      toast.error('Conecte uma carteira primeiro.')
+      toast.error('Connect a wallet first.')
       return
     }
     setIsAddPending(true)
@@ -53,16 +53,16 @@ export function NetworkSwitchModal({ isOpen, onClose }: NetworkSwitchModalProps)
         method: 'wallet_addEthereumChain',
         params: [ARC_CHAIN_PARAMS],
       })
-      toast.success('Rede adicionada. Trocando para Arc Testnet...')
+      toast.success('Network added. Switching to Arc Testnet...')
       // Alguns wallets trocam automaticamente; outros não — tenta switch
       await switchChain({ chainId: ARC_CHAIN_ID })
       onClose()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       if (/user rejected|user denied/i.test(msg)) {
-        toast.error('Você recusou adicionar a rede.')
+        toast.error('You rejected adding the network.')
       } else {
-        toast.error('Não foi possível adicionar a rede.')
+        toast.error('Could not add the network.')
       }
     } finally {
       setIsAddPending(false)
@@ -92,7 +92,7 @@ export function NetworkSwitchModal({ isOpen, onClose }: NetworkSwitchModalProps)
           type="button"
           onClick={onClose}
           className="absolute right-3 top-3 rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
-          aria-label="Fechar"
+          aria-label="Close"
         >
           <X className="h-5 w-5" />
         </button>
@@ -104,13 +104,13 @@ export function NetworkSwitchModal({ isOpen, onClose }: NetworkSwitchModalProps)
             </div>
             <div>
               <h2 id="network-modal-title" className="text-lg font-semibold text-white">
-                Rede incorreta
+                Wrong network
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Conecte na <strong className="text-cyan-400">Arc Testnet</strong> (Chain ID 5042002) para usar o Swap.
+                Connect to <strong className="text-cyan-400">Arc Testnet</strong> (Chain ID 5042002) to use Swap.
               </p>
               <p className="mt-2 text-xs text-slate-500">
-                Se a Arc Testnet não aparecer na sua carteira, use &quot;Adicionar rede&quot;.
+                If Arc Testnet does not appear in your wallet, use &quot;Add network&quot;.
               </p>
             </div>
           </div>
@@ -125,10 +125,10 @@ export function NetworkSwitchModal({ isOpen, onClose }: NetworkSwitchModalProps)
               {isSwitchPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Trocando...
+                  Switching...
                 </>
               ) : (
-                'Trocar para Arc Testnet'
+                'Switch to Arc Testnet'
               )}
             </button>
             <button
@@ -140,10 +140,10 @@ export function NetworkSwitchModal({ isOpen, onClose }: NetworkSwitchModalProps)
               {isAddPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Adicionando...
+                  Adding...
                 </>
               ) : (
-                'Adicionar rede Arc Testnet'
+                'Add Arc Testnet network'
               )}
             </button>
           </div>

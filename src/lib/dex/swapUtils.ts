@@ -61,10 +61,10 @@ export function buildSwapPath(tokenFrom: Address, tokenTo: Address): readonly [A
   const t0 = tokenFrom as Address
   const t1 = tokenTo as Address
   if (!t0 || !t1 || typeof t0 !== 'string' || typeof t1 !== 'string') {
-    throw new Error('Path inválido: tokenFrom e tokenTo devem ser endereços válidos')
+    throw new Error('Invalid path: tokenFrom and tokenTo must be valid addresses')
   }
   if (!t0.startsWith('0x') || !t1.startsWith('0x')) {
-    throw new Error('Path inválido: endereços devem começar com 0x')
+    throw new Error('Invalid path: addresses must start with 0x')
   }
   return [t0, t1]
 }
@@ -88,7 +88,7 @@ export async function quoteSwap(
 
   const amountOut = amounts?.[amounts.length - 1]
   if (!amountOut || amountOut === 0n) {
-    throw new Error('Router não retornou cotação. Par sem liquidez ou path inválido.')
+    throw new Error('Router did not return quote. Pair has no liquidity or invalid path.')
   }
 
   // minOut = amountOut * (100 - slippage) / 100. Default 1%: amountOut * 99 / 100
@@ -112,7 +112,7 @@ export async function getPairReserves(
   })) as [bigint, bigint]
 
   if (reserve0 === 0n && reserve1 === 0n) {
-    throw new Error('Pool sem liquidez')
+    throw new Error('Pool has no liquidity')
   }
 
   return { reserve0, reserve1 }

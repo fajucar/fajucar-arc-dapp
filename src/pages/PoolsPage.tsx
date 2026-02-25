@@ -9,11 +9,11 @@ import { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { RefreshCw, Loader2, Plus, ExternalLink, X, ChevronDown } from 'lucide-react'
 import { useChainId, useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { parseUnits } from 'viem'
+import { parseUnits, formatUnits } from 'viem'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAllPools } from '@/hooks/usePools'
 import { ensureAllowance } from '@/lib/allowance'
-import { getPairAddress } from '@/lib/arcDexRead'
+import { getPairAddress, readPairState } from '@/lib/arcDexRead'
 import { ARCDEX } from '@/config/arcDex'
 import { ARC_TESTNET_TOKENS } from '@/config/tokens.arc-testnet'
 import { TokenSelectButton } from '@/components/TokenSelect'
@@ -156,12 +156,17 @@ export function PoolsPage() {
   const [amount0, setAmount0] = useState('')
   const [amount1, setAmount1] = useState('')
   const [addingLiquidity, setAddingLiquidity] = useState(false)
+  const [poolModalBalance0, setPoolModalBalance0] = useState<string | null>(null)
+  const [poolModalBalance1, setPoolModalBalance1] = useState<string | null>(null)
 
   const [genericAddOpen, setGenericAddOpen] = useState(false)
   const [genericTokenA, setGenericTokenA] = useState<ArcTestnetToken | null>(null)
   const [genericTokenB, setGenericTokenB] = useState<ArcTestnetToken | null>(null)
   const [genericAmountA, setGenericAmountA] = useState('')
   const [genericAmountB, setGenericAmountB] = useState('')
+  const [balanceA, setBalanceA] = useState<string | null>(null)
+  const [balanceB, setBalanceB] = useState<string | null>(null)
+  const [pairReserves, setPairReserves] = useState<{ r0: number; r1: number; token0Addr: string; token1Addr: string } | null>(null)
 
   const handleAddLiquidity = async (pool: PoolMarketInfo) => {
     if (!address || !publicClient) {
@@ -296,6 +301,138 @@ export function PoolsPage() {
     }
   }, [isSuccess, refetch])
 
+  useEffect(() => {
+    if (!addModalPool || !address || !publicClient) {
+      setPoolModalBalance0(null)
+      setPoolModalBalance1(null)
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      try {
+        const [b0, b1] = await Promise.all([
+          publicClient.readContract({
+            address: addModalPool.token0.address,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: addModalPool.token1.address,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          }) as Promise<bigint>,
+        ])
+        if (!cancelled) {
+          setPoolModalBalance0(formatUnits(b0, addModalPool.token0.decimals))
+          setPoolModalBalance1(formatUnits(b1, addModalPool.token1.decimals))
+        }
+      } catch {
+        if (!cancelled) {
+          setPoolModalBalance0(null)
+          setPoolModalBalance1(null)
+        }
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [addModalPool, address, publicClient])
+
+  useEffect(() => {
+    if (!genericAddOpen || !publicClient || !genericTokenA || !genericTokenB || isWrongChain) {
+      setPairReserves(null)
+      return
+    }
+    const [a, b] = [genericTokenA.address, genericTokenB.address].sort((x, y) => x.toLowerCase().localeCompare(y.toLowerCase()))
+    getPairAddress(a as `0x${string}`, b as `0x${string}`, publicClient).then(async (pairAddr) => {
+      if (!pairAddr || pairAddr === '0x0000000000000000000000000000000000000000') {
+        setPairReserves(null)
+        return
+      }
+      try {
+        const state = await readPairState(pairAddr, publicClient)
+        const r0 = parseFloat(state.reserve0Formatted)
+        const r1 = parseFloat(state.reserve1Formatted)
+        if (r0 > 0 && r1 > 0) {
+          setPairReserves({
+            r0,
+            r1,
+            token0Addr: state.token0.address.toLowerCase(),
+            token1Addr: state.token1.address.toLowerCase(),
+          })
+        } else {
+          setPairReserves(null)
+        }
+      } catch {
+        setPairReserves(null)
+      }
+    })
+  }, [genericAddOpen, publicClient, genericTokenA?.address, genericTokenB?.address, isWrongChain])
+
+  const computeAmountBFromA = (amountA: string): string => {
+    if (!pairReserves || !genericTokenA || !genericTokenB) return ''
+    const v = parseFloat(amountA)
+    if (isNaN(v) || v <= 0) return ''
+    const isA_token0 = genericTokenA.address.toLowerCase() === pairReserves.token0Addr
+    const ratio = isA_token0 ? pairReserves.r1 / pairReserves.r0 : pairReserves.r0 / pairReserves.r1
+    const result = v * ratio
+    return result > 0 ? result.toFixed(6) : ''
+  }
+
+  const computeAmountAFromB = (amountB: string): string => {
+    if (!pairReserves || !genericTokenA || !genericTokenB) return ''
+    const v = parseFloat(amountB)
+    if (isNaN(v) || v <= 0) return ''
+    const isB_token1 = genericTokenB.address.toLowerCase() === pairReserves.token1Addr
+    const ratio = isB_token1 ? pairReserves.r0 / pairReserves.r1 : pairReserves.r1 / pairReserves.r0
+    const result = v * ratio
+    return result > 0 ? result.toFixed(6) : ''
+  }
+
+  useEffect(() => {
+    if (!genericAddOpen || !address || !publicClient) {
+      setBalanceA(null)
+      setBalanceB(null)
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      if (genericTokenA) {
+        try {
+          const b = (await publicClient.readContract({
+            address: genericTokenA.address,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          })) as bigint
+          if (!cancelled) setBalanceA(formatUnits(b, genericTokenA.decimals))
+        } catch {
+          if (!cancelled) setBalanceA(null)
+        }
+      } else {
+        setBalanceA(null)
+      }
+      if (genericTokenB) {
+        try {
+          const b = (await publicClient.readContract({
+            address: genericTokenB.address,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          })) as bigint
+          if (!cancelled) setBalanceB(formatUnits(b, genericTokenB.decimals))
+        } catch {
+          if (!cancelled) setBalanceB(null)
+        }
+      } else {
+        setBalanceB(null)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [genericAddOpen, address, publicClient, genericTokenA?.address, genericTokenA?.decimals, genericTokenB?.address, genericTokenB?.decimals])
+
   return (
     <>
       <Helmet>
@@ -399,24 +536,60 @@ export function PoolsPage() {
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">{addModalPool.token0.symbol}</label>
-                      <input
-                        type="number"
-                        value={amount0}
-                        onChange={(e) => setAmount0(e.target.value)}
-                        placeholder="0.0"
-                        className="w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
-                      />
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs text-slate-400">{addModalPool.token0.symbol}</label>
+                        {poolModalBalance0 != null && (
+                          <span className="text-xs text-cyan-400">
+                            Balance: {formatNumber(poolModalBalance0, 4)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={amount0}
+                          onChange={(e) => setAmount0(e.target.value)}
+                          placeholder="0.0"
+                          className="flex-1 bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
+                        />
+                        {poolModalBalance0 != null && parseFloat(poolModalBalance0) > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setAmount0(poolModalBalance0)}
+                            className="text-xs font-medium text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-slate-700/60 transition-colors"
+                          >
+                            Max
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">{addModalPool.token1.symbol}</label>
-                      <input
-                        type="number"
-                        value={amount1}
-                        onChange={(e) => setAmount1(e.target.value)}
-                        placeholder="0.0"
-                        className="w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
-                      />
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs text-slate-400">{addModalPool.token1.symbol}</label>
+                        {poolModalBalance1 != null && (
+                          <span className="text-xs text-cyan-400">
+                            Balance: {formatNumber(poolModalBalance1, 4)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={amount1}
+                          onChange={(e) => setAmount1(e.target.value)}
+                          placeholder="0.0"
+                          className="flex-1 bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
+                        />
+                        {poolModalBalance1 != null && parseFloat(poolModalBalance1) > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setAmount1(poolModalBalance1)}
+                            className="text-xs font-medium text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-slate-700/60 transition-colors"
+                          >
+                            Max
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <button
                       onClick={() => handleAddLiquidity(addModalPool)}
@@ -460,7 +633,12 @@ export function PoolsPage() {
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs text-slate-400 block mb-2">Token A</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs text-slate-400">Token A</label>
+                        {genericTokenA && balanceA != null && (
+                          <span className="text-xs text-cyan-400">Balance: {formatNumber(balanceA, 4)}</span>
+                        )}
+                      </div>
                       <TokenSelectButton
                         tokens={ARC_TESTNET_TOKENS}
                         selected={genericTokenA}
@@ -470,16 +648,39 @@ export function PoolsPage() {
                         placeholder="Select token A"
                         className="w-full justify-between"
                       />
-                      <input
-                        type="number"
-                        value={genericAmountA}
-                        onChange={(e) => setGenericAmountA(e.target.value)}
-                        placeholder="0.0"
-                        className="mt-2 w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
-                      />
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={genericAmountA}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setGenericAmountA(val)
+                            if (pairReserves) setGenericAmountB(computeAmountBFromA(val))
+                          }}
+                          placeholder="0.0"
+                          className="flex-1 bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
+                        />
+                        {genericTokenA && balanceA != null && parseFloat(balanceA) > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGenericAmountA(balanceA)
+                              if (pairReserves) setGenericAmountB(computeAmountBFromA(balanceA))
+                            }}
+                            className="text-xs font-medium text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-slate-700/60 transition-colors"
+                          >
+                            Max
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div>
-                      <label className="text-xs text-slate-400 block mb-2">Token B</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs text-slate-400">Token B</label>
+                        {genericTokenB && balanceB != null && (
+                          <span className="text-xs text-cyan-400">Balance: {formatNumber(balanceB, 4)}</span>
+                        )}
+                      </div>
                       <TokenSelectButton
                         tokens={ARC_TESTNET_TOKENS}
                         selected={genericTokenB}
@@ -489,13 +690,31 @@ export function PoolsPage() {
                         placeholder="Select token B"
                         className="w-full justify-between"
                       />
-                      <input
-                        type="number"
-                        value={genericAmountB}
-                        onChange={(e) => setGenericAmountB(e.target.value)}
-                        placeholder="0.0"
-                        className="mt-2 w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
-                      />
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={genericAmountB}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setGenericAmountB(val)
+                            if (pairReserves) setGenericAmountA(computeAmountAFromB(val))
+                          }}
+                          placeholder="0.0"
+                          className="flex-1 bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
+                        />
+                        {genericTokenB && balanceB != null && parseFloat(balanceB) > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGenericAmountB(balanceB)
+                              if (pairReserves) setGenericAmountA(computeAmountAFromB(balanceB))
+                            }}
+                            className="text-xs font-medium text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-slate-700/60 transition-colors"
+                          >
+                            Max
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {genericTokenA && genericTokenB && (
                       <PairExistsHint tokenA={genericTokenA} tokenB={genericTokenB} publicClient={publicClient} isWrongChain={!!isWrongChain} />

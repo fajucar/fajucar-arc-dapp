@@ -65,12 +65,13 @@ export const ARC_TESTNET = {
   },
 } as const
 
-/** Token pairs to discover via factory.getPair (FAJU/USDC, ARCX/USDC, FAJU/EURC, ARCX/EURC) */
+/** Token pairs to discover via factory.getPair (incl. FAJU/ARCX para My positions) */
 export const ARC_PAIRS_TO_DISCOVER = [
   [FAJU_ADDR, USDC_ADDR],
   [ARCX_ADDR, USDC_ADDR],
   [FAJU_ADDR, EURC_ADDR],
   [ARCX_ADDR, EURC_ADDR],
+  [FAJU_ADDR, ARCX_ADDR],
 ] as const
 
 export type ArcTestnetAddresses = typeof ARC_TESTNET.addresses

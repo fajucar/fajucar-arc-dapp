@@ -19,14 +19,14 @@ function NavItem({ to, icon: Icon, label }: { to: string; icon: React.ComponentT
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out
+        `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
         ${isActive
-          ? 'text-cyan-400 border-b-2 border-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.3)]'
-          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+          ? 'text-cyan-300 bg-cyan-500/10'
+          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
         }`
       }
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-4 w-4 shrink-0" />
       <span>{label}</span>
     </NavLink>
   )
@@ -40,16 +40,11 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-[#0b1220]/90 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
         {/* Logo / Brand */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-[0_0_20px_rgba(34,211,238,0.2)] group-hover:shadow-[0_0_24px_rgba(34,211,238,0.35)] transition-all duration-300">
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
             A
           </div>
-          <div>
-            <span className="text-xl font-bold tracking-tight">FajuARC</span>
-            <span className="ml-2 text-xs text-cyan-400/90 font-medium px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20">
-              Running on Arc Testnet
-            </span>
-          </div>
+          <span className="text-lg font-semibold text-white tracking-tight">FajuARC</span>
         </Link>
 
         {/* Desktop Nav */}
@@ -61,10 +56,10 @@ export function Header() {
 
         {/* Right: Network Badge + Wallet */}
         <div className="hidden md:flex items-center gap-3">
-          <div className="rounded-full border border-cyan-500/40 px-3 py-1.5 text-xs font-medium text-cyan-300 bg-cyan-500/5 shadow-[0_0_12px_rgba(34,211,238,0.15)]">
+          <div className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-400 bg-slate-800/60 border border-slate-700/60">
             Arc Testnet
           </div>
-          <div className={`relative ${isConnected ? 'animate-pulse' : ''}`} style={{ animationDuration: '2s' }}>
+          <div className="relative">
             <ConnectButton />
           </div>
         </div>
@@ -89,7 +84,7 @@ export function Header() {
             className="border-t border-slate-800/60 bg-[#0b1220]/98 backdrop-blur-xl md:hidden"
           >
             <div className="px-4 py-4 space-y-2">
-              <div className="rounded-full border border-cyan-500/40 px-3 py-1.5 text-xs font-medium text-cyan-300 bg-cyan-500/5 w-fit mb-4">
+              <div className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-400 bg-slate-800/60 border border-slate-700/60 w-fit mb-4">
                 Arc Testnet
               </div>
               {navItems.map((item) => (

@@ -1,4 +1,5 @@
 import { normalizeAddress } from '@/lib/assertAddress'
+import { ARC_TESTNET_TOKENS } from './tokens.arc-testnet'
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000' as `0x${string}`
 
@@ -14,25 +15,24 @@ function mustAddr(label: string, v?: string): `0x${string}` {
 
 /**
  * Arc Testnet (chainId 5042002) — endereços oficiais on-chain (produção).
- * Lê de env (Vercel) se definido; senão usa hardcoded. normalizeAddress extrai 0x+40hex mesmo com aspas.
+ * Token addresses from tokens.arc-testnet (single source). Factory/Router from env or hardcoded.
  *
- * Factory: 0x4b6F738717c46A8998990EBCb17FEf032DC5958B
- * Router:  0x3bE7d2Ed202D5B65b9c78BBf59f6f70880F6C0a6E
- * Pair:    0x327f52e7cDfF1567F1708c2D045c7e2963e4889A (USDC/EURC)
+ * CORE CONTRACTS (Arc Testnet)
+ * Factory: 0xcf7663a5a69D34920C772593875271A10DD03801
+ * Router:  0xAA095B928eF662CFFDeE3A4860806082ecBC0C42
+ * LiquidityHelper: 0x8bbC202A110771cc5c05ec53F29eCA23622452F6
  */
 const env = typeof import.meta !== 'undefined' ? (import.meta as { env?: Record<string, string | undefined> }).env : undefined
-const FACTORY = mustAddr('factory', env?.VITE_DEX_FACTORY_ADDRESS ?? '0x4b6F738717c46A8998990EBCb17FEf032DC5958B')
-const ROUTER = mustAddr('router', env?.VITE_DEX_ROUTER_ADDRESS ?? '0x3bE7d2Ed202D5B65b9c78BBf59f6f70880F6C0a6E')
-const PAIR_USDC_EURC = mustAddr('pair', env?.VITE_DEX_PAIR_ADDRESS ?? '0x327f52e7cDfF1567F1708c2D045c7e2963e4889A')
-// TEMP DEBUG: remove after validation
-if (typeof window !== 'undefined') {
-  console.log('[arcTestnet] router raw length:', ROUTER.length, 'JSON:', JSON.stringify(ROUTER))
-  console.log('[arcTestnet] factory raw length:', FACTORY.length, 'JSON:', JSON.stringify(FACTORY))
-  console.log('[arcTestnet] pair raw length:', PAIR_USDC_EURC.length, 'JSON:', JSON.stringify(PAIR_USDC_EURC))
-}
+const FACTORY = mustAddr('factory', env?.VITE_DEX_FACTORY_ADDRESS ?? '0xcf7663a5a69D34920C772593875271A10DD03801')
+const ROUTER = mustAddr('router', env?.VITE_DEX_ROUTER_ADDRESS ?? '0xAA095B928eF662CFFDeE3A4860806082ecBC0C42')
 const LIQUIDITY_HELPER = mustAddr('liquidityHelper', '0x8bbC202A110771cc5c05ec53F29eCA23622452F6')
-const USDC_ADDR = mustAddr('usdc', '0x3600000000000000000000000000000000000000')
-const EURC_ADDR = mustAddr('eurc', '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a')
+const USDC_ADDR = ARC_TESTNET_TOKENS.find((t) => t.symbol === 'USDC')!.address
+const EURC_ADDR = ARC_TESTNET_TOKENS.find((t) => t.symbol === 'EURC')!.address
+const FAJU_ADDR = ARC_TESTNET_TOKENS.find((t) => t.symbol === 'FAJU')!.address
+const ARCX_ADDR = ARC_TESTNET_TOKENS.find((t) => t.symbol === 'ARCX')!.address
+
+/** Pair address discovered via factory.getPair; use discovery in useAllPools */
+const PAIR_PLACEHOLDER = ZERO_ADDR
 
 export const ARC_TESTNET = {
   chainId: 5042002,
@@ -49,25 +49,29 @@ export const ARC_TESTNET = {
   addresses: {
     factory: FACTORY,
     router: ROUTER,
-    pair: PAIR_USDC_EURC,
+    pair: PAIR_PLACEHOLDER,
     liquidityHelper: LIQUIDITY_HELPER,
     usdc: USDC_ADDR,
     eurc: EURC_ADDR,
+    faju: FAJU_ADDR,
+    arcx: ARCX_ADDR,
   },
 
-  tokens: {
-    USDC: {
-      address: USDC_ADDR,
-      symbol: 'USDC',
-      decimals: 6,
-    },
-    EURC: {
-      address: EURC_ADDR,
-      symbol: 'EURC',
-      decimals: 6,
-    },
+  tokens: Object.fromEntries(ARC_TESTNET_TOKENS.map((t) => [t.symbol, { address: t.address, symbol: t.symbol, name: t.name, decimals: t.decimals }])) as {
+    USDC: { address: `0x${string}`; symbol: string; name: string; decimals: number }
+    EURC: { address: `0x${string}`; symbol: string; name: string; decimals: number }
+    FAJU: { address: `0x${string}`; symbol: string; name: string; decimals: number }
+    ARCX: { address: `0x${string}`; symbol: string; name: string; decimals: number }
   },
 } as const
+
+/** Token pairs to discover via factory.getPair (FAJU/USDC, ARCX/USDC, FAJU/EURC, ARCX/EURC) */
+export const ARC_PAIRS_TO_DISCOVER = [
+  [FAJU_ADDR, USDC_ADDR],
+  [ARCX_ADDR, USDC_ADDR],
+  [FAJU_ADDR, EURC_ADDR],
+  [ARCX_ADDR, EURC_ADDR],
+] as const
 
 export type ArcTestnetAddresses = typeof ARC_TESTNET.addresses
 export type ArcTestnetTokens = typeof ARC_TESTNET.tokens

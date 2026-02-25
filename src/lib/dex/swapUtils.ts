@@ -71,6 +71,7 @@ export function buildSwapPath(tokenFrom: Address, tokenTo: Address): readonly [A
 
 /**
  * Quote: getAmountsOut no Router. Retorna amountOut e amountOutMin (1% slippage por padrão).
+ * Throws "No route / insufficient liquidity" se getAmountsOut falhar.
  */
 export async function quoteSwap(
   publicClient: PublicClient,
@@ -79,23 +80,30 @@ export async function quoteSwap(
   path: readonly [Address, Address],
   slippagePercent: number = 1
 ): Promise<SwapQuote> {
-  const amounts = (await publicClient.readContract({
-    address: routerAddress,
-    abi: ROUTER_ABI,
-    functionName: 'getAmountsOut',
-    args: [amountIn, path],
-  })) as bigint[]
+  try {
+    const amounts = (await publicClient.readContract({
+      address: routerAddress,
+      abi: ROUTER_ABI,
+      functionName: 'getAmountsOut',
+      args: [amountIn, path],
+    })) as bigint[]
 
-  const amountOut = amounts?.[amounts.length - 1]
-  if (!amountOut || amountOut === 0n) {
-    throw new Error('Router did not return quote. Pair has no liquidity or invalid path.')
+    const amountOut = amounts?.[amounts.length - 1]
+    if (!amountOut || amountOut === 0n) {
+      throw new Error('No route / insufficient liquidity')
+    }
+
+    const slippageBps = BigInt(Math.min(500, Math.max(10, Math.round(slippagePercent * 100))))
+    const amountOutMin = (amountOut * (10000n - slippageBps)) / 10000n
+
+    return { amountOut, amountOutMin }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (!msg.toLowerCase().includes('route') && !msg.toLowerCase().includes('liquidity')) {
+      console.warn('[quoteSwap] getAmountsOut failed', { routerAddress, amountIn: amountIn.toString(), path, error: msg })
+    }
+    throw new Error('No route / insufficient liquidity')
   }
-
-  // minOut = amountOut * (100 - slippage) / 100. Default 1%: amountOut * 99 / 100
-  const slippageBps = BigInt(Math.min(500, Math.max(10, Math.round(slippagePercent * 100)))) // 0.1% a 5%
-  const amountOutMin = (amountOut * (10000n - slippageBps)) / 10000n
-
-  return { amountOut, amountOutMin }
 }
 
 /**

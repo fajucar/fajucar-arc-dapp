@@ -9,6 +9,8 @@ interface AppShellProps {
   children: ReactNode
   className?: string
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '6xl' | 'full'
+  /** Reduced padding for compact layouts (e.g. Swap page) */
+  compact?: boolean
 }
 
 const maxWidthClasses = {
@@ -28,12 +30,16 @@ export function AppShell({
   children,
   className,
   maxWidth = '6xl',
+  compact = false,
 }: AppShellProps) {
   return (
     <main className={cn('mx-auto w-full py-8 px-4', maxWidthClasses[maxWidth])}>
-      <div className="bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-3xl p-6 md:p-8 shadow-[0_8px_32px_rgba(6,182,212,0.1)]">
+      <div className={cn(
+        'bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-3xl shadow-[0_8px_32px_rgba(6,182,212,0.1)]',
+        compact ? 'p-4 md:p-5' : 'p-6 md:p-8'
+      )}>
         {title && (
-          <div className="mb-6">
+          <div className={cn(compact ? 'mb-4' : 'mb-6')}>
             <h1 className={cn(
               'text-white mb-2',
               titleClassName ?? 'text-4xl md:text-5xl font-bold'

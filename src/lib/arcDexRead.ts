@@ -100,6 +100,10 @@ async function fetchTokenMetadata(
 
   // Na Arc, 0x3600... é o USDC oficial (precompile ERC-20); pode não expor symbol()/decimals() → usar fallback
   const isArcUsdcPrecompile = tokenAddress.toLowerCase() === USDC_ADDRESS.toLowerCase()
+  const lower = tokenAddress.toLowerCase()
+  const isFaju = lower === ARCDEX.faju.toLowerCase()
+  const isArcx = lower === ARCDEX.arcx.toLowerCase()
+  const isEurc = lower === ARCDEX.eurc.toLowerCase()
 
   let symbol: string
   let decimals: number
@@ -114,11 +118,11 @@ async function fetchTokenMetadata(
         functionName: 'symbol',
       })) as string
     } catch (err) {
-      if (isArcUsdcPrecompile) {
-        symbol = 'USDC'
-      } else {
-        symbol = `${tokenAddress.slice(0, 6)}...${tokenAddress.slice(-4)}`
-      }
+      if (isArcUsdcPrecompile) symbol = 'USDC'
+      else if (isEurc) symbol = 'EURC'
+      else if (isFaju) symbol = 'FAJU'
+      else if (isArcx) symbol = 'ARCX'
+      else symbol = `${tokenAddress.slice(0, 6)}...${tokenAddress.slice(-4)}`
       console.warn(`[arcDexRead] Failed to fetch symbol for ${tokenAddress}, using fallback:`, symbol)
     }
 
@@ -130,13 +134,11 @@ async function fetchTokenMetadata(
         functionName: 'decimals',
       })) as number
     } catch (err) {
-      if (isArcUsdcPrecompile) {
-        decimals = 6
-      } else if (tokenAddress.toLowerCase() === ARCDEX.eurc.toLowerCase()) {
-        decimals = ARCDEX.decimals.EURC
-      } else {
-        decimals = 18
-      }
+      if (isArcUsdcPrecompile) decimals = 6
+      else if (isEurc) decimals = ARCDEX.decimals.EURC
+      else if (isFaju) decimals = ARCDEX.decimals.FAJU
+      else if (isArcx) decimals = ARCDEX.decimals.ARCX
+      else decimals = 18
       console.warn(`[arcDexRead] Failed to fetch decimals for ${tokenAddress}, using fallback:`, decimals)
     }
 
@@ -411,34 +413,51 @@ const LP_TOKEN_ABI = [
 ] as const
 
 /**
- * Busca o endereço do par USDC/EURC via factory.getPair ou fallback para env.
- * Factory pode não implementar allPairsLength — usamos getPair.
+ * Busca todos os pairs conhecidos via factory.getPair (FAJU/USDC, ARCX/USDC, FAJU/EURC, ARCX/EURC)
+ * e fallbacks (USDC/EURC, env, config).
  */
 async function getKnownPairAddresses(publicClient: PublicClient): Promise<Address[]> {
   const addresses: Address[] = []
-  try {
-    const pairFromFactory = await getPairAddressUsdcEurc(publicClient)
-    if (pairFromFactory) {
-      addresses.push(pairFromFactory)
-      console.log('[getUserPools] Pair from factory.getPair:', pairFromFactory)
-      return addresses
+  const seen = new Set<string>()
+
+  const addIfNew = (addr: Address | null) => {
+    if (addr && addr !== ZERO_ADDRESS) {
+      const key = addr.toLowerCase()
+      if (!seen.has(key)) {
+        seen.add(key)
+        addresses.push(addr)
+      }
     }
-  } catch (err: unknown) {
-    console.warn('[getUserPools] factory.getPair failed:', err)
   }
+
+  // Discover configured pairs (FAJU/USDC, ARCX/USDC, FAJU/EURC, ARCX/EURC)
+  if (ARCDEX.pairsToDiscover) {
+    for (const [tokenA, tokenB] of ARCDEX.pairsToDiscover) {
+      try {
+        const pairAddr = await getPairAddress(tokenA, tokenB, publicClient)
+        addIfNew(pairAddr)
+      } catch {
+        continue
+      }
+    }
+  }
+
+  // Fallback: USDC/EURC
+  try {
+    const pairUsdcEurc = await getPairAddressUsdcEurc(publicClient)
+    addIfNew(pairUsdcEurc)
+  } catch {
+    // ignore
+  }
+
   const envPair = getEnvPairAddress()
-  if (envPair) {
-    addresses.push(envPair)
-    console.log('[getUserPools] Using VITE_DEX_PAIR_ADDRESS fallback:', envPair)
-    return addresses
+  addIfNew(envPair)
+
+  if (ARCDEX.pair && ARCDEX.pair !== ZERO_ADDRESS) {
+    addIfNew(ARCDEX.pair)
   }
-  const configPair = ARCDEX.pair
-  if (configPair && configPair !== ZERO_ADDRESS) {
-    addresses.push(configPair)
-    console.log('[getUserPools] Using ARCDEX.pair fallback:', configPair)
-    return addresses
-  }
-  return []
+
+  return addresses
 }
 
 /**

@@ -11,6 +11,7 @@ import { PoolsPage } from '@/pages/PoolsPage'
 import { MyNFTsPage } from '@/pages/MyNFTsPage'
 import { MyPoolsPage } from '@/pages/MyPoolsPage'
 import { ArcDexTestPool } from '@/pages/ArcDexTestPool'
+import { FaucetPage } from '@/pages/FaucetPage'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ConfigErrorBanner } from '@/components/ConfigErrorBanner'
 
@@ -216,6 +217,14 @@ function App() {
               element={
                 <ErrorBoundary>
                   <ArcDexTestPool />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/faucet" 
+              element={
+                <ErrorBoundary>
+                  <FaucetPage />
                 </ErrorBoundary>
               } 
             />

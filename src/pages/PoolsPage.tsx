@@ -13,14 +13,52 @@ import { parseUnits } from 'viem'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAllPools } from '@/hooks/usePools'
 import { ensureAllowance } from '@/lib/allowance'
+import { getPairAddress } from '@/lib/arcDexRead'
 import { ARCDEX } from '@/config/arcDex'
+import { ARC_TESTNET_TOKENS } from '@/config/tokens.arc-testnet'
+import { TokenSelectButton } from '@/components/TokenSelect'
 import { toast } from 'react-hot-toast'
 import { formatNumber } from '@/lib/format'
 import type { PoolMarketInfo } from '@/hooks/usePools'
+import type { ArcTestnetToken } from '@/config/tokens.arc-testnet'
+
+const FACTORY_ABI = [
+  { name: 'createPair', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'tokenA', type: 'address' }, { name: 'tokenB', type: 'address' }], outputs: [{ name: 'pair', type: 'address' }] },
+] as const
 
 const LIQUIDITY_HELPER_ABI = [
   { name: 'addLiquidity', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'pair', type: 'address' }, { name: 'tokenA', type: 'address' }, { name: 'tokenB', type: 'address' }, { name: 'amountA', type: 'uint256' }, { name: 'amountB', type: 'uint256' }], outputs: [{ name: 'liquidity', type: 'uint256' }] },
 ] as const
+
+function PairExistsHint({
+  tokenA,
+  tokenB,
+  publicClient,
+  isWrongChain,
+}: {
+  tokenA: ArcTestnetToken
+  tokenB: ArcTestnetToken
+  publicClient: import('viem').PublicClient | undefined
+  isWrongChain: boolean
+}) {
+  const [pairExists, setPairExists] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (!publicClient || isWrongChain || tokenA.address === tokenB.address) {
+      setPairExists(null)
+      return
+    }
+    const [a, b] = [tokenA.address, tokenB.address].sort((x, y) => x.toLowerCase().localeCompare(y.toLowerCase()))
+    getPairAddress(a as `0x${string}`, b as `0x${string}`, publicClient).then((p) =>
+      setPairExists(p != null && p !== '0x0000000000000000000000000000000000000000')
+    )
+  }, [publicClient, isWrongChain, tokenA.address, tokenB.address])
+  if (pairExists === null) return <p className="text-xs text-slate-500">Checking pair...</p>
+  return (
+    <p className="text-xs text-slate-500">
+      {pairExists ? 'Pair exists. Adding to existing pool.' : 'Pair will be created.'}
+    </p>
+  )
+}
 
 const ERC20_ABI = [
   { name: 'transfer', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] },
@@ -119,6 +157,12 @@ export function PoolsPage() {
   const [amount1, setAmount1] = useState('')
   const [addingLiquidity, setAddingLiquidity] = useState(false)
 
+  const [genericAddOpen, setGenericAddOpen] = useState(false)
+  const [genericTokenA, setGenericTokenA] = useState<ArcTestnetToken | null>(null)
+  const [genericTokenB, setGenericTokenB] = useState<ArcTestnetToken | null>(null)
+  const [genericAmountA, setGenericAmountA] = useState('')
+  const [genericAmountB, setGenericAmountB] = useState('')
+
   const handleAddLiquidity = async (pool: PoolMarketInfo) => {
     if (!address || !publicClient) {
       toast.error('Connect your wallet')
@@ -169,6 +213,83 @@ export function PoolsPage() {
     }
   }
 
+  const handleGenericAddLiquidity = async () => {
+    if (!address || !publicClient || !genericTokenA || !genericTokenB) {
+      toast.error('Select both tokens and connect wallet')
+      return
+    }
+    if (!genericAmountA || !genericAmountB || parseFloat(genericAmountA) <= 0 || parseFloat(genericAmountB) <= 0) {
+      toast.error('Enter valid amounts for both tokens')
+      return
+    }
+    if (genericTokenA.address.toLowerCase() === genericTokenB.address.toLowerCase()) {
+      toast.error('Select different tokens')
+      return
+    }
+    setAddingLiquidity(true)
+    const [addrA, addrB] = [genericTokenA.address, genericTokenB.address].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+    const token0Addr = addrA as `0x${string}`
+    const token1Addr = addrB as `0x${string}`
+    const token0 = genericTokenA.address.toLowerCase() === token0Addr.toLowerCase() ? genericTokenA : genericTokenB
+    const token1 = genericTokenA.address.toLowerCase() === token1Addr.toLowerCase() ? genericTokenA : genericTokenB
+    const amount0Wei = parseUnits(genericAmountA, token0.decimals)
+    const amount1Wei = parseUnits(genericAmountB, token1.decimals)
+    const writeOpts = (opts: { address: `0x${string}`; abi: readonly unknown[]; functionName: string; args: unknown[] }) =>
+      writeContractAsync({ address: opts.address, abi: opts.abi, functionName: opts.functionName, args: opts.args })
+    try {
+      let pairAddr = await getPairAddress(token0Addr, token1Addr, publicClient)
+      const pairWillBeCreated = !pairAddr || pairAddr === '0x0000000000000000000000000000000000000000'
+
+      if (pairWillBeCreated) {
+        toast.loading('Creating pair...', { id: 'create' })
+        await writeContractAsync({
+          address: ARCDEX.factory,
+          abi: FACTORY_ABI,
+          functionName: 'createPair',
+          args: [token0Addr, token1Addr],
+        })
+        toast.dismiss('create')
+        pairAddr = await getPairAddress(token0Addr, token1Addr, publicClient)
+        if (!pairAddr) throw new Error('Pair creation failed')
+        toast.success('Pair created')
+      }
+
+      const [b0, b1] = await Promise.all([
+        publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }) as Promise<bigint>,
+        publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }) as Promise<bigint>,
+      ])
+      if (b0 < amount0Wei) throw new Error(`Insufficient balance of ${token0.symbol}`)
+      if (b1 < amount1Wei) throw new Error(`Insufficient balance of ${token1.symbol}`)
+
+      toast.loading(`Approving ${token0.symbol}...`, { id: 'a0' })
+      await ensureAllowance(publicClient, writeOpts, token0Addr, address, ARCDEX.liquidityHelper, amount0Wei)
+      toast.dismiss('a0')
+      toast.loading(`Approving ${token1.symbol}...`, { id: 'a1' })
+      await ensureAllowance(publicClient, writeOpts, token1Addr, address, ARCDEX.liquidityHelper, amount1Wei)
+      toast.dismiss('a1')
+      toast.loading('Adding liquidity...', { id: 'add' })
+      await writeContractAsync({
+        address: ARCDEX.liquidityHelper,
+        abi: LIQUIDITY_HELPER_ABI,
+        functionName: 'addLiquidity',
+        args: [pairAddr, token0Addr, token1Addr, amount0Wei, amount1Wei],
+      })
+      toast.dismiss('add')
+      toast.success('Liquidity added')
+      setGenericTokenA(null)
+      setGenericTokenB(null)
+      setGenericAmountA('')
+      setGenericAmountB('')
+      setGenericAddOpen(false)
+      refetch()
+    } catch (err: unknown) {
+      toast.dismiss()
+      toast.error(err instanceof Error ? err.message : 'Failed to add liquidity')
+    } finally {
+      setAddingLiquidity(false)
+    }
+  }
+
   useEffect(() => {
     if (isSuccess) {
       refetch()
@@ -196,14 +317,23 @@ export function PoolsPage() {
             {/* Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-white">Available pairs</h2>
-              <button
-                onClick={refetch}
-                disabled={loading}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setGenericAddOpen(true); setGenericTokenA(null); setGenericTokenB(null); setGenericAmountA(''); setGenericAmountB('') }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500 hover:bg-cyan-600 text-white transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add liquidity
+                </button>
+                <button
+                  onClick={refetch}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </button>
+              </div>
             </div>
 
             {error && (
@@ -291,6 +421,88 @@ export function PoolsPage() {
                     <button
                       onClick={() => handleAddLiquidity(addModalPool)}
                       disabled={addingLiquidity || isPending || isConfirming || !amount0 || !amount1}
+                      className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {addingLiquidity || isPending || isConfirming ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Add'}
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Generic Add Liquidity Modal */}
+        <AnimatePresence>
+          {genericAddOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setGenericAddOpen(false)}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md rounded-2xl border border-slate-700/50 bg-slate-900/95 backdrop-blur-xl p-6 shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Add liquidity / Create pool</h3>
+                  <button onClick={() => setGenericAddOpen(false)} className="p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                    <X className="h-5 w-5 text-slate-400" />
+                  </button>
+                </div>
+                {!isConnected ? (
+                  <p className="text-slate-400 text-sm">Connect your wallet to add liquidity.</p>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-2">Token A</label>
+                      <TokenSelectButton
+                        tokens={ARC_TESTNET_TOKENS}
+                        selected={genericTokenA}
+                        onSelect={setGenericTokenA}
+                        excludedAddress={genericTokenB?.address}
+                        showBalance
+                        placeholder="Select token A"
+                        className="w-full justify-between"
+                      />
+                      <input
+                        type="number"
+                        value={genericAmountA}
+                        onChange={(e) => setGenericAmountA(e.target.value)}
+                        placeholder="0.0"
+                        className="mt-2 w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-2">Token B</label>
+                      <TokenSelectButton
+                        tokens={ARC_TESTNET_TOKENS}
+                        selected={genericTokenB}
+                        onSelect={setGenericTokenB}
+                        excludedAddress={genericTokenA?.address}
+                        showBalance
+                        placeholder="Select token B"
+                        className="w-full justify-between"
+                      />
+                      <input
+                        type="number"
+                        value={genericAmountB}
+                        onChange={(e) => setGenericAmountB(e.target.value)}
+                        placeholder="0.0"
+                        className="mt-2 w-full bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
+                      />
+                    </div>
+                    {genericTokenA && genericTokenB && (
+                      <PairExistsHint tokenA={genericTokenA} tokenB={genericTokenB} publicClient={publicClient} isWrongChain={!!isWrongChain} />
+                    )}
+                    <button
+                      onClick={handleGenericAddLiquidity}
+                      disabled={addingLiquidity || isPending || isConfirming || !genericTokenA || !genericTokenB || !genericAmountA || !genericAmountB}
                       className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {addingLiquidity || isPending || isConfirming ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Add'}

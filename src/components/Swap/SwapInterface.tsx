@@ -6,6 +6,8 @@ import { ArrowDownUp, Loader2, AlertCircle, CheckCircle2, Settings } from 'lucid
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { ARCDEX } from '@/config/arcDex'
+import { ARC_TESTNET_TOKENS } from '@/config/tokens.arc-testnet'
+import { TokenSelectButton } from '@/components/TokenSelect'
 import { CONSTANTS } from '@/config/constants'
 import { EURC_ALTERNATIVE, ZERO_ADDRESS } from '@/config/tokens'
 import { ensureAllowance } from '@/lib/allowance'
@@ -347,10 +349,11 @@ interface Token {
   decimals: number
 }
 
-const TOKENS: Token[] = [
-  { address: ARCDEX.usdc, symbol: 'USDC', decimals: ARCDEX.decimals.USDC },
-  { address: ARCDEX.eurc, symbol: 'EURC', decimals: ARCDEX.decimals.EURC },
-]
+const TOKENS: Token[] = ARC_TESTNET_TOKENS.map((t) => ({
+  address: t.address,
+  symbol: t.symbol,
+  decimals: t.decimals,
+}))
 
 export function SwapInterface() {
   const { address, isConnected, chainId } = useAccount()
@@ -677,16 +680,6 @@ export function SwapInterface() {
       const calculateAmountOut = async () => {
         setIsCalculating(true)
         try {
-          const isUsdcEurc =
-            (tokenFrom.address.toLowerCase() === ARCDEX.usdc.toLowerCase() && tokenTo.address.toLowerCase() === ARCDEX.eurc.toLowerCase()) ||
-            (tokenFrom.address.toLowerCase() === ARCDEX.eurc.toLowerCase() && tokenTo.address.toLowerCase() === ARCDEX.usdc.toLowerCase())
-
-          if (!isUsdcEurc) {
-            setAmountTo('0.0')
-            setIsCalculating(false)
-            return
-          }
-
           const ZERO_PREVIEW = '0x0000000000000000000000000000000000000000' as `0x${string}`
           let pairAddress = (await publicClient.readContract({
             address: ARCDEX.factory,
@@ -705,13 +698,14 @@ export function SwapInterface() {
             }
           }
           if (!pairAddress || pairAddress === ZERO_PREVIEW) {
-            setAmountTo('0.0')
+            setAmountTo('—')
+            console.warn('[Preview] No route: pair not found', { tokenIn: tokenFrom.symbol, tokenOut: tokenTo.symbol, router: DEX_ROUTER_ADDRESS })
             setIsCalculating(false)
             return
           }
           const path = buildSwapPath(tokenFrom.address, tokenTo.address)
 
-          // 1) Tentar getAmountsOut no Router primeiro ( fonte mais confiável )
+          // 1) Try getAmountsOut on Router first
           if (DEX_ROUTER_ADDRESS) {
             try {
               const amounts = (await publicClient.readContract({
@@ -722,16 +716,27 @@ export function SwapInterface() {
               })) as bigint[]
               const amountOut = amounts?.[amounts.length - 1]
               if (amountOut != null && amountOut > 0n) {
-                setAmountTo(formatUnits(amountOut, tokenTo.decimals))
+                const formatted = formatUnits(amountOut, tokenTo.decimals)
+                setAmountTo(formatNumber(parseFloat(formatted), 3))
                 setIsCalculating(false)
                 return
               }
-            } catch (getAmountsErr: any) {
-              console.warn('[Preview] getAmountsOut falhou, usando reservas:', getAmountsErr?.shortMessage || getAmountsErr?.message)
+            } catch (getAmountsErr: unknown) {
+              const errMsg = (getAmountsErr as { shortMessage?: string; message?: string })?.shortMessage || (getAmountsErr as { message?: string })?.message
+              console.warn('[Preview] getAmountsOut failed — no route or insufficient liquidity', {
+                tokenIn: tokenFrom.symbol,
+                tokenOut: tokenTo.symbol,
+                amountIn: amountIn.toString(),
+                router: DEX_ROUTER_ADDRESS,
+                error: errMsg,
+              })
+              setAmountTo('—')
+              setIsCalculating(false)
+              return
             }
           }
 
-          // 2) Fallback: fórmula com reservas do Pair
+          // 2) Fallback: reserves formula
           const [reserves, token0Addr] = await Promise.all([
             publicClient.readContract({
               address: pairAddress,
@@ -747,8 +752,8 @@ export function SwapInterface() {
 
           const [reserve0, reserve1] = reserves
           if (reserve0 === 0n || reserve1 === 0n) {
-            setAmountTo('0.0')
-            console.warn('[Preview] Pool sem liquidez (reserve0=', reserve0.toString(), 'reserve1=', reserve1.toString(), ')')
+            setAmountTo('—')
+            console.warn('[Preview] No route / insufficient liquidity', { reserve0: reserve0.toString(), reserve1: reserve1.toString() })
             setIsCalculating(false)
             return
           }
@@ -760,10 +765,12 @@ export function SwapInterface() {
           const numerator = amountInWithFee * reserveOut
           const denominator = reserveIn * 1000n + amountInWithFee
           const amountOut = numerator / denominator
-          setAmountTo(formatUnits(amountOut, tokenTo.decimals))
-        } catch (err: any) {
-          console.error('[Preview] Erro ao calcular cotação:', err?.shortMessage || err?.message || err)
-          setAmountTo('0.0')
+          const formatted = formatUnits(amountOut, tokenTo.decimals)
+          setAmountTo(formatNumber(parseFloat(formatted), 3))
+        } catch (err: unknown) {
+          const errMsg = (err as { shortMessage?: string; message?: string })?.shortMessage || (err as { message?: string })?.message
+          console.error('[Preview] Quote error', { tokenIn: tokenFrom.symbol, tokenOut: tokenTo.symbol, amount: amountFrom, router: DEX_ROUTER_ADDRESS, error: errMsg })
+          setAmountTo('—')
         } finally {
           setIsCalculating(false)
         }
@@ -1883,18 +1890,14 @@ export function SwapInterface() {
             </button>
           </div>
           <div className="flex items-center gap-4">
-            <select
-              value={tokenFrom.address}
-              onChange={(e) => {
-                const token = TOKENS.find((t) => t.address === e.target.value)
-                if (token) setTokenFrom(token)
-              }}
-              className="w-32 bg-slate-800/80 border border-slate-600/50 rounded-xl px-4 py-3.5 text-base font-medium text-white focus:outline-none focus:border-cyan-500/40 transition-all"
-            >
-              {TOKENS.map((token) => (
-                <option key={token.address} value={token.address}>{token.symbol}</option>
-              ))}
-            </select>
+            <TokenSelectButton
+              tokens={ARC_TESTNET_TOKENS}
+              selected={tokenFrom ? { address: tokenFrom.address, symbol: tokenFrom.symbol, name: ARC_TESTNET_TOKENS.find((t) => t.address === tokenFrom.address)?.name ?? tokenFrom.symbol, decimals: tokenFrom.decimals } : null}
+              onSelect={(t) => setTokenFrom({ address: t.address, symbol: t.symbol, decimals: t.decimals })}
+              excludedAddress={tokenTo?.address}
+              showBalance
+              className="shrink-0"
+            />
             <input
               type="text"
               inputMode="decimal"
@@ -1925,19 +1928,15 @@ export function SwapInterface() {
             <label className="text-sm text-slate-400">To</label>
           </div>
           <div className="flex items-center gap-4">
-            <select
-              value={tokenTo?.address || ''}
-              onChange={(e) => {
-                const token = TOKENS.find((t) => t.address === e.target.value)
-                if (token) setTokenTo(token)
-              }}
-              className="w-32 bg-slate-800/80 border border-slate-600/50 rounded-xl px-4 py-3.5 text-base font-medium text-white focus:outline-none focus:border-cyan-500/40 transition-all"
-            >
-              <option value="">Select</option>
-              {TOKENS.filter((t) => t.address !== tokenFrom.address).map((token) => (
-                <option key={token.address} value={token.address}>{token.symbol}</option>
-              ))}
-            </select>
+            <TokenSelectButton
+              tokens={ARC_TESTNET_TOKENS}
+              selected={tokenTo ? { address: tokenTo.address, symbol: tokenTo.symbol, name: ARC_TESTNET_TOKENS.find((t) => t.address === tokenTo.address)?.name ?? tokenTo.symbol, decimals: tokenTo.decimals } : null}
+              onSelect={(t) => setTokenTo({ address: t.address, symbol: t.symbol, decimals: t.decimals })}
+              excludedAddress={tokenFrom.address}
+              showBalance
+              placeholder="Select"
+              className="shrink-0"
+            />
             <div className="flex-1 text-right">
               {isCalculating ? (
                 <Loader2 className="h-6 w-6 text-slate-500 animate-spin inline-block" />

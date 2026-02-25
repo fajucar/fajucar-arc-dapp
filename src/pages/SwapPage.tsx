@@ -1,38 +1,31 @@
 import { Helmet } from 'react-helmet-async'
-import { ExternalLink, Droplet } from 'lucide-react'
-import { CONSTANTS } from '@/config/constants'
 import { AppShell } from '@/components/Layout/AppShell'
 import { SwapInterface } from '@/components/Swap/SwapInterface'
+import { GetTestTokensCard } from '@/components/Swap/GetTestTokensCard'
 
 export function SwapPage() {
   return (
     <>
       <Helmet>
         <title>Swap - FajuARC</title>
-        <meta name="description" content="Swap tokens on FajuARC. Trade USDC and EURC on Arc Testnet." />
+        <meta name="description" content="Swap tokens on FajuARC. Trade FAJU, ARCX, USDC, EURC on Arc Testnet." />
       </Helmet>
       <AppShell
         title="Swap"
-        subtitle="Trade USDC ↔ EURC on Arc Testnet"
+        subtitle="Trade FAJU, ARCX, USDC, EURC on Arc Testnet"
         titleClassName="text-xl md:text-2xl font-semibold tracking-tight"
-        maxWidth="2xl"
+        maxWidth="6xl"
+        compact
       >
-        <div className="space-y-6">
-          {/* Swap Interface */}
-          <SwapInterface />
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_440px] gap-4 md:gap-5 items-start">
+          {/* Coluna esquerda: Swap principal */}
+          <div className="min-w-0">
+            <SwapInterface />
+          </div>
 
-          {/* Faucet — minimal secondary card */}
-          <div className="mt-4 flex justify-center">
-            <a
-              href={CONSTANTS.LINKS.faucet}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-700/30 bg-slate-800/10 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600/40 transition-colors"
-            >
-              <Droplet className="h-3.5 w-3.5" />
-              Faucet
-              <ExternalLink className="h-3 w-3" />
-            </a>
+          {/* Coluna direita (desktop): Get test tokens */}
+          <div className="md:sticky md:top-20">
+            <GetTestTokensCard />
           </div>
         </div>
       </AppShell>

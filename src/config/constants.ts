@@ -24,8 +24,12 @@ export const CONSTANTS = {
     discord: 'https://discord.gg/arc',
     twitter: 'https://twitter.com/arcnetwork',
     explorer: 'https://testnet.arcscan.app',
-    faucet: 'https://faucet.circle.com/', // Circle Faucet oficial
-  }
+    // Primary faucet (backward compatibility)
+    faucet: 'https://faucet.circle.com/',
+    // Cross-chain: ETH Sepolia → USDC Sepolia → USDC Arc
+    uniswapSepolia: 'https://app.uniswap.org/swap?chain=sepolia',
+    bridgeUsdcToArc: 'https://docs.arc.network/arc/tutorials/bridge-usdc-to-arc',
+  },
 } as const
 
 export const WALLET_ICONS = {

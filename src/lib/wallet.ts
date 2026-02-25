@@ -26,9 +26,9 @@ export async function connectWallet(): Promise<WalletState> {
 
   try {
     // Request accounts
-    const accounts = await provider.request({ method: 'eth_requestAccounts' });
+    const accounts = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
     
-    if (accounts.length === 0) {
+    if (!accounts || accounts.length === 0) {
       throw new Error('No accounts found. Please unlock your wallet.');
     }
 
@@ -79,9 +79,9 @@ export async function getWalletState(): Promise<WalletState> {
   }
 
   try {
-    const accounts = await provider.request({ method: 'eth_accounts' });
+    const accounts = (await provider.request({ method: 'eth_accounts' })) as string[];
     
-    if (accounts.length === 0) {
+    if (!accounts || accounts.length === 0) {
       return {
         address: null,
         chainId: null,

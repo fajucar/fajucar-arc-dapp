@@ -1891,7 +1891,7 @@ export function SwapInterface() {
           </div>
           <div className="flex items-center gap-4">
             <TokenSelectButton
-              tokens={ARC_TESTNET_TOKENS}
+              tokens={[...ARC_TESTNET_TOKENS]}
               selected={tokenFrom ? { address: tokenFrom.address, symbol: tokenFrom.symbol, name: ARC_TESTNET_TOKENS.find((t) => t.address === tokenFrom.address)?.name ?? tokenFrom.symbol, decimals: tokenFrom.decimals } : null}
               onSelect={(t) => setTokenFrom({ address: t.address, symbol: t.symbol, decimals: t.decimals })}
               excludedAddress={tokenTo?.address}
@@ -1929,7 +1929,7 @@ export function SwapInterface() {
           </div>
           <div className="flex items-center gap-4">
             <TokenSelectButton
-              tokens={ARC_TESTNET_TOKENS}
+              tokens={[...ARC_TESTNET_TOKENS]}
               selected={tokenTo ? { address: tokenTo.address, symbol: tokenTo.symbol, name: ARC_TESTNET_TOKENS.find((t) => t.address === tokenTo.address)?.name ?? tokenTo.symbol, decimals: tokenTo.decimals } : null}
               onSelect={(t) => setTokenTo({ address: t.address, symbol: t.symbol, decimals: t.decimals })}
               excludedAddress={tokenFrom.address}

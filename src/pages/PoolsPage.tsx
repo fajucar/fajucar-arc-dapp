@@ -272,6 +272,7 @@ export function PoolsPage() {
       toast.loading(`Approving ${token1.symbol}...`, { id: 'a1' })
       await ensureAllowance(publicClient, writeOpts, token1Addr, address, ARCDEX.liquidityHelper, amount1Wei)
       toast.dismiss('a1')
+      if (!pairAddr) throw new Error('Pair address not found')
       toast.loading('Adding liquidity...', { id: 'add' })
       await writeContractAsync({
         address: ARCDEX.liquidityHelper,
@@ -640,9 +641,9 @@ export function PoolsPage() {
                         )}
                       </div>
                       <TokenSelectButton
-                        tokens={ARC_TESTNET_TOKENS}
+                        tokens={[...ARC_TESTNET_TOKENS]}
                         selected={genericTokenA}
-                        onSelect={setGenericTokenA}
+                        onSelect={(t) => setGenericTokenA(t as ArcTestnetToken)}
                         excludedAddress={genericTokenB?.address}
                         showBalance
                         placeholder="Select token A"
@@ -682,9 +683,9 @@ export function PoolsPage() {
                         )}
                       </div>
                       <TokenSelectButton
-                        tokens={ARC_TESTNET_TOKENS}
+                        tokens={[...ARC_TESTNET_TOKENS]}
                         selected={genericTokenB}
-                        onSelect={setGenericTokenB}
+                        onSelect={(t) => setGenericTokenB(t as ArcTestnetToken)}
                         excludedAddress={genericTokenA?.address}
                         showBalance
                         placeholder="Select token B"

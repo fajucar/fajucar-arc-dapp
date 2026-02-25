@@ -1,5 +1,6 @@
 import { BrowserProvider } from 'ethers';
 import { ARC_TESTNET, LOCALHOST_NETWORK } from '../config/contracts';
+import type { EthereumProviderWithFlags } from '../types/ethereum-provider';
 
 export interface WalletState {
   address: string | null;
@@ -11,8 +12,13 @@ export interface WalletState {
 export interface WalletProvider {
   name: string;
   icon?: string;
-  provider: any;
+  provider: EthereumProviderWithFlags;
   isMetaMask?: boolean;
+}
+
+function getEth(): EthereumProviderWithFlags | undefined {
+  if (typeof window === 'undefined' || !window.ethereum) return undefined;
+  return window.ethereum as EthereumProviderWithFlags;
 }
 
 /**
@@ -20,51 +26,48 @@ export interface WalletProvider {
  */
 export function detectWalletProviders(): WalletProvider[] {
   const providers: WalletProvider[] = [];
-
-  if (typeof window.ethereum === 'undefined') {
-    return providers;
-  }
+  const eth = getEth();
+  if (!eth) return providers;
 
   // Check if multiple providers are available (EIP-6963)
-  if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
-    window.ethereum.providers.forEach((provider: any) => {
-      const name = provider.isMetaMask 
-        ? 'MetaMask' 
-        : provider.isCoinbaseWallet 
+  if (eth.providers && Array.isArray(eth.providers)) {
+    eth.providers.forEach((provider) => {
+      const p = provider as EthereumProviderWithFlags;
+      const name = p.isMetaMask
+        ? 'MetaMask'
+        : p.isCoinbaseWallet
         ? 'Coinbase Wallet'
-        : provider.isBraveWallet
+        : p.isBraveWallet
         ? 'Brave Wallet'
-        : provider.isTrust
+        : p.isTrust
         ? 'Trust Wallet'
-        : provider.isRabby
+        : p.isRabby
         ? 'Rabby'
         : 'Unknown Wallet';
-      
+
       providers.push({
         name,
-        provider,
-        isMetaMask: provider.isMetaMask || false,
+        provider: p,
+        isMetaMask: p.isMetaMask || false,
       });
     });
   } else {
-    // Single provider
-    const provider = window.ethereum;
-    const name = provider.isMetaMask 
-      ? 'MetaMask' 
-      : provider.isCoinbaseWallet 
+    const name = eth.isMetaMask
+      ? 'MetaMask'
+      : eth.isCoinbaseWallet
       ? 'Coinbase Wallet'
-      : provider.isBraveWallet
+      : eth.isBraveWallet
       ? 'Brave Wallet'
-      : provider.isTrust
+      : eth.isTrust
       ? 'Trust Wallet'
-      : provider.isRabby
+      : eth.isRabby
       ? 'Rabby'
       : 'Ethereum Wallet';
-    
+
     providers.push({
       name,
-      provider,
-      isMetaMask: provider.isMetaMask || false,
+      provider: eth,
+      isMetaMask: eth.isMetaMask || false,
     });
   }
 

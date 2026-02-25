@@ -31,8 +31,8 @@ async function waitForReceipt(txHash: string, maxWaitMs = 60_000): Promise<any> 
     try {
       const receipt = await window.ethereum?.request({
         method: 'eth_getTransactionReceipt',
-        params: [txHash],
-      });
+        params: [txHash as `0x${string}`],
+      }) as { status?: string | number; blockNumber?: string; transactionHash?: string } | null | undefined;
       
       if (receipt) {
         console.log(`[GM] Receipt found (attempt ${attempts}):`, {
@@ -42,7 +42,8 @@ async function waitForReceipt(txHash: string, maxWaitMs = 60_000): Promise<any> 
         });
         
         // Check if transaction was successful (handle both hex and number formats)
-        const isSuccess = receipt.status === '0x1' || receipt.status === 1 || receipt.status === '0x01';
+        const status = receipt.status;
+        const isSuccess = status === '0x1' || status === 1 || status === '0x01';
         
         if (isSuccess) {
           console.log('[GM] Transaction confirmed as successful!');
@@ -50,7 +51,7 @@ async function waitForReceipt(txHash: string, maxWaitMs = 60_000): Promise<any> 
         }
         
         // If receipt exists but failed, throw error
-        if (receipt.status === '0x0' || receipt.status === 0 || receipt.status === '0x00') {
+        if (status === '0x0' || status === 0 || status === '0x00') {
           throw new Error('Transaction failed on-chain (status: 0x0)');
         }
       }
@@ -166,7 +167,7 @@ export function useGM(
       // Step 4: Send on-chain transaction
       // CRITICAL: NO SOCIAL ACTION BEFORE THIS POINT
       console.log('[GM] Sending on-chain transaction...');
-      const txHashResult: string = await window.ethereum.request({
+      const txHashResult = (await (window.ethereum as { request: (args: unknown) => Promise<unknown> }).request({
         method: 'eth_sendTransaction',
         params: [
           {
@@ -176,7 +177,7 @@ export function useGM(
             data: GM_HEX_DATA,
           },
         ],
-      });
+      })) as string;
 
       if (!txHashResult) {
         throw new Error('Transaction did not return a hash.');

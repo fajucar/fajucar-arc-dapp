@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { connectWallet, getWalletState, disconnectWallet, WalletState, detectWalletProviders } from '../utils/wallet';
+import type { EthereumProviderWithFlags } from '../types/ethereum-provider';
 
 interface WalletContextType extends WalletState {
   connect: (walletName?: string) => Promise<void>;
@@ -51,18 +52,21 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     // Listen for account changes
     // Try to get MetaMask provider, fallback to window.ethereum
-    let ethereum: any = null;
+    let ethereum: EthereumProviderWithFlags | null = null;
     if (typeof window.ethereum !== 'undefined') {
-      if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
-        ethereum = window.ethereum.providers.find((p: any) => p.isMetaMask === true) || window.ethereum;
+      const eth = window.ethereum as EthereumProviderWithFlags;
+      if (eth.providers && Array.isArray(eth.providers)) {
+        const metaMask = eth.providers.find((p) => p.isMetaMask === true);
+        ethereum = (metaMask || eth);
       } else {
-        ethereum = window.ethereum;
+        ethereum = eth;
       }
     }
 
     if (ethereum) {
-      const handleAccountsChanged = (accounts: string[]) => {
-        if (accounts.length === 0) {
+      const handleAccountsChanged = (...args: unknown[]) => {
+        const accounts = args[0] as string[];
+        if (!accounts || accounts.length === 0) {
           setState({
             address: null,
             provider: null,
@@ -78,12 +82,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         refresh();
       };
 
-      ethereum.on('accountsChanged', handleAccountsChanged);
-      ethereum.on('chainChanged', handleChainChanged);
+      ethereum.on?.('accountsChanged', handleAccountsChanged);
+      ethereum.on?.('chainChanged', handleChainChanged);
 
       return () => {
-        ethereum?.removeListener('accountsChanged', handleAccountsChanged);
-        ethereum?.removeListener('chainChanged', handleChainChanged);
+        ethereum?.removeListener?.('accountsChanged', handleAccountsChanged);
+        ethereum?.removeListener?.('chainChanged', handleChainChanged);
       };
     }
   }, [refresh]);

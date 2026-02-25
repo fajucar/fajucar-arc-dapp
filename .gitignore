@@ -47,3 +47,5 @@ testsprite_tests/
 
 
 
+.vercel
+.env*.local

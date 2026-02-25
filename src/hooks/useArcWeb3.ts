@@ -89,15 +89,14 @@ export function useArcWeb3() {
       updateWalletState();
     };
 
-    const handleChainChanged = (chainIdHex: string) => {
-      console.log('[Web3] Chain changed:', chainIdHex);
+    const handleChainChanged = (..._args: unknown[]) => {
       // Chain changed event provides hex string, but we'll get it from provider
       // Small delay to ensure wallet has updated
       setTimeout(() => updateWalletState(), 100);
     };
 
-    ethereum.on('accountsChanged', handleAccountsChanged);
-    ethereum.on('chainChanged', handleChainChanged);
+    ethereum.on?.('accountsChanged', handleAccountsChanged);
+    ethereum.on?.('chainChanged', handleChainChanged);
 
     // Periodic check (every 2 seconds) to catch any missed updates
     const intervalId = setInterval(() => {
@@ -106,8 +105,8 @@ export function useArcWeb3() {
 
     return () => {
       if (ethereum) {
-        ethereum.removeListener('accountsChanged', handleAccountsChanged);
-        ethereum.removeListener('chainChanged', handleChainChanged);
+        ethereum.removeListener?.('accountsChanged', handleAccountsChanged);
+        ethereum.removeListener?.('chainChanged', handleChainChanged);
       }
       clearInterval(intervalId);
     };

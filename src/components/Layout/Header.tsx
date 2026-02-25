@@ -34,7 +34,7 @@ function NavItem({ to, icon: Icon, label }: { to: string; icon: React.ComponentT
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { isConnected } = useAccount()
+  useAccount()
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-[#0b1220]/90 backdrop-blur-xl">

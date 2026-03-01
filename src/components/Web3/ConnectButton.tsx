@@ -6,6 +6,7 @@ import { useWalletModal } from '@/contexts/WalletModalContext'
 import { CONSTANTS } from '@/config/constants'
 import { formatAddress } from '@/lib/formatters'
 import { arcTestnet } from '@/config/chains'
+import { clearWagmiStorage } from '@/lib/wagmiStorage'
 import toast from 'react-hot-toast'
 
 // ChainId esperado: do ENV ou fallback para Arc Testnet
@@ -36,7 +37,7 @@ export function ConnectButton() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
-  const { disconnect } = useDisconnect()
+  const { mutateAsync: disconnectAsync } = useDisconnect()
   const { data: ensName } = useEnsName({ address })
   const { data: ensAvatar } = useEnsAvatar({ 
     name: ensName && typeof ensName === 'string' ? ensName : undefined 
@@ -212,10 +213,16 @@ export function ConnectButton() {
 
             <div className="border-t border-slate-700 mt-2 pt-2">
               <button
-                onClick={() => {
-                  disconnect()
+                onClick={async () => {
                   setShowDropdown(false)
-                  toast.success('Disconnected')
+                  try {
+                    await disconnectAsync()
+                    toast.success('Disconnected')
+                  } catch {
+                    clearWagmiStorage()
+                    window.location.reload()
+                    toast.success('Disconnected')
+                  }
                 }}
                 className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors text-left"
               >

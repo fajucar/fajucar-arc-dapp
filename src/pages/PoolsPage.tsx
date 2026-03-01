@@ -6,11 +6,15 @@
 */
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { V3PositionsPage } from '@/modules/v3/V3PositionsPage'
 import { Helmet } from 'react-helmet-async'
 import { RefreshCw, Loader2, Plus, ExternalLink, X, ChevronDown } from 'lucide-react'
 import { useChainId, useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { motion, AnimatePresence } from 'framer-motion'
+import { PoolCardSkeleton } from '@/components/ui/Skeleton'
+import { SegmentedTabs } from '@/components/SegmentedTabs'
 import { useAllPools } from '@/hooks/usePools'
 import { ensureAllowance } from '@/lib/allowance'
 import { getPairAddress, readPairState } from '@/lib/arcDexRead'
@@ -67,6 +71,11 @@ const ERC20_ABI = [
   { name: 'allowance', type: 'function', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
 ] as const
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+}
+
 function PoolMarketCard({
   pool,
   onAddLiquidity,
@@ -77,11 +86,16 @@ function PoolMarketCard({
   onAddLiquidity: () => void
   explorerBase: string
   explorerName: string
+  index?: number
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false)
 
   return (
-    <div className="rounded-2xl border border-slate-700/50 bg-slate-800/30 shadow-lg shadow-black/20 p-5 transition-all hover:border-slate-600/60">
+    <motion.div
+      variants={cardVariants}
+      whileHover={{ y: -2 }}
+      className="rounded-2xl border border-slate-700/50 bg-slate-800/30 shadow-lg shadow-black/20 p-5 transition-all duration-200 hover:border-slate-600/60 hover:shadow-xl hover:shadow-black/25"
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-white mb-1">{pool.pairName}</h3>
@@ -139,7 +153,7 @@ function PoolMarketCard({
           </a>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }
 
@@ -167,6 +181,10 @@ export function PoolsPage() {
   const [balanceA, setBalanceA] = useState<string | null>(null)
   const [balanceB, setBalanceB] = useState<string | null>(null)
   const [pairReserves, setPairReserves] = useState<{ r0: number; r1: number; token0Addr: string; token1Addr: string } | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabFromUrl = (searchParams.get('tab') === 'v3' ? 'v3' : 'v2') as 'v2' | 'v3'
+  const [tab, setTab] = useState<'v2' | 'v3'>(tabFromUrl)
+  useEffect(() => { setTab(tabFromUrl) }, [tabFromUrl])
 
   const handleAddLiquidity = async (pool: PoolMarketInfo) => {
     if (!address || !publicClient) {
@@ -442,15 +460,30 @@ export function PoolsPage() {
       </Helmet>
 
       <div className="py-8 px-4 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-6">Pools</h1>
+        <h1 className="text-2xl font-bold text-white mb-4">Pools</h1>
+        <SegmentedTabs
+          tabs={[
+            { id: 'v2', label: 'V2 Pools' },
+            { id: 'v3', label: 'V3 Positions' },
+          ]}
+          activeId={tab}
+          onChange={(id) => {
+            const t = id as 'v2' | 'v3'
+            setTab(t)
+            setSearchParams(t === 'v2' ? {} : { tab: 'v3' })
+          }}
+          className="mb-6"
+        />
 
-        {isWrongChain && (
+        {tab === 'v3' && <V3PositionsPage />}
+
+        {tab === 'v2' && isWrongChain && (
           <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm">
             Connect to <strong>Arc Testnet</strong> to view pools.
           </div>
         )}
 
-        {!isWrongChain && (
+        {tab === 'v2' && !isWrongChain && (
           <div className="space-y-4">
             {/* Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -481,9 +514,10 @@ export function PoolsPage() {
             )}
 
             {loading && (
-              <div className="flex items-center gap-2 text-slate-400 py-12">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading pools...
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <PoolCardSkeleton key={i} />
+                ))}
               </div>
             )}
 
@@ -494,7 +528,17 @@ export function PoolsPage() {
             )}
 
             {!loading && pools.length > 0 && (
-              <div className="space-y-4">
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: {},
+                  visible: {
+                    transition: { staggerChildren: 0.05 },
+                  },
+                }}
+                className="space-y-4"
+              >
                 {pools.map((pool) => (
                   <PoolMarketCard
                     key={pool.pairAddress}
@@ -504,7 +548,7 @@ export function PoolsPage() {
                     explorerName={ARCDEX.explorerName}
                   />
                 ))}
-              </div>
+              </motion.div>
             )}
           </div>
         )}

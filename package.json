@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@openzeppelin/contracts": "^5.4.0",
     "@playwright/test": "^1.58.2",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",

@@ -8,6 +8,7 @@ import { MintPage } from '@/components/Mint/MintPage'
 import { ArcCollectionGallery } from '@/components/ArcCollectionGallery'
 import { SwapPage } from '@/pages/SwapPage'
 import { PoolsPage } from '@/pages/PoolsPage'
+import { ManageV3PositionPage } from '@/modules/v3/pages/ManageV3PositionPage'
 import { MyNFTsPage } from '@/pages/MyNFTsPage'
 import { MyPoolsPage } from '@/pages/MyPoolsPage'
 import { ArcDexTestPool } from '@/pages/ArcDexTestPool'
@@ -193,6 +194,14 @@ function App() {
               element={
                 <ErrorBoundary>
                   <PoolsPage />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/pools/v3/positions/:tokenId" 
+              element={
+                <ErrorBoundary>
+                  <ManageV3PositionPage />
                 </ErrorBoundary>
               } 
             />

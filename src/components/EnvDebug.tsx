@@ -1,18 +1,14 @@
 import { useEffect } from 'react';
 
 export function EnvDebug() {
-  // Only show in development
-  if (import.meta.env.PROD) return null;
-
-  // Environment variables to check
   const envVars = {
     VITE_FAJUCAR_COLLECTION_ADDRESS: import.meta.env.VITE_FAJUCAR_COLLECTION_ADDRESS,
     VITE_ENABLE_FAJUCAR_NFTS: import.meta.env.VITE_ENABLE_FAJUCAR_NFTS,
     VITE_NETWORK_NAME: import.meta.env.VITE_NETWORK_NAME,
   };
 
-  // Log to console on mount and when values change
   useEffect(() => {
+    if (import.meta.env.PROD) return;
     console.group('🔍 EnvDebug: Environment Variables');
     console.log('=====================================');
     
@@ -25,7 +21,9 @@ export function EnvDebug() {
     
     console.log('=====================================');
     console.groupEnd();
-  }, []);
+  }, [envVars.VITE_FAJUCAR_COLLECTION_ADDRESS, envVars.VITE_ENABLE_FAJUCAR_NFTS, envVars.VITE_NETWORK_NAME]);
+
+  if (import.meta.env.PROD) return null;
 
   // Helper to check if value is defined
   const isDefined = (value: string | undefined): boolean => {

@@ -402,6 +402,7 @@ export function SwapInterface() {
   /** true = Router novo (TransferHelper), false = Router antigo (swap vai reverter), null = ainda não verificou */
   const [routerSupportsPrecompile, setRouterSupportsPrecompile] = useState<boolean | null>(null)
   const [showNetworkModal, setShowNetworkModal] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const { writeContractAsync: writeContract, data: hash, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
@@ -1262,14 +1263,14 @@ export function SwapInterface() {
           console.error('name:', simErr?.name)
           console.error('data:', simErr?.data)
           console.error('details:', simErr?.details)
-        } catch (_) {}
+        } catch { /* ignore */ }
 
         if (simErr?.cause) {
           console.error('ERRO simulateContract — cause:', simErr.cause)
           try {
             console.error('cause.data:', (simErr.cause as any)?.data)
             console.error('cause.message:', (simErr.cause as any)?.message)
-          } catch (_) {}
+          } catch { /* ignore */ }
         }
 
         // Detalhe bruto para mostrar na tela (não depende do F12)
@@ -1775,8 +1776,6 @@ export function SwapInterface() {
   const canSwap = !isWrongChain && routerSupportsPrecompile !== false && !poolSemLiquidez && amountFrom && amountTo && parseFloat(amountFrom) > 0 && parseFloat(amountTo) > 0 && !isLoading
   const isApproveLoading = (isPending || isConfirming) && lastWriteType === 'approve'
   const isSwapLoading = (isPending || isConfirming) && lastWriteType === 'swap'
-
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <div className="space-y-4">

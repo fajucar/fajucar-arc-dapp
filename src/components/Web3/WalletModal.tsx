@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
-import { useConnect, useConnectors } from 'wagmi'
+import { useConnect, useConnectors, useDisconnect } from 'wagmi'
+import { clearWagmiStorage } from '@/lib/wagmiStorage'
 import toast from 'react-hot-toast'
 import { ExternalLink } from 'lucide-react'
 import { WALLETCONNECT_PROJECT_ID } from '@/config/wagmi'
@@ -45,6 +46,7 @@ function isMobile(): boolean {
 
 export function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const { connectAsync, isPending } = useConnect()
+  const { mutateAsync: disconnectAsync } = useDisconnect()
   const connectors = useConnectors()
   const mobile = isMobile()
   const [isConnecting, setIsConnecting] = useState(false)
@@ -295,6 +297,11 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     
     try {
       console.log('[WalletModal] Connecting with connector:', connectorToUse.type, connectorToUse.id)
+      try {
+        await disconnectAsync()
+      } catch {
+        // Ignore - may not be connected
+      }
       await connectAsync({ connector: connectorToUse })
       console.log('[WalletModal] Connection successful')
       // Only close modal on successful connection
@@ -303,6 +310,13 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
       // Don't close modal on error (better UX)
       const errorMessage = err?.shortMessage || err?.message || err?.toString() || 'Connection failed'
       const errorString = errorMessage.toLowerCase()
+
+      // "Connector already connected" = state mismatch (wagmi thinks connected, UI doesn't)
+      if (errorString.includes('connector') && errorString.includes('already connected')) {
+        setConnectError('Conexão em estado inválido. Clique em "Resetar e conectar" para corrigir.')
+        setIsConnecting(false)
+        return
+      }
       
       // Circuit breaker: detect "init" errors and disable WalletConnect
       if (connectorToUse.type === 'walletConnect' && 
@@ -501,8 +515,22 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           
           {/* Error message */}
           {connectError && (
-            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 space-y-2">
               <p className="text-sm text-red-400">{connectError}</p>
+              {(connectError.includes('Resetar') || connectError.toLowerCase().includes('already connected')) && (
+                <button
+                  onClick={() => {
+                    clearWagmiStorage()
+                    setConnectError(null)
+                    onClose()
+                    toast.success('Conexão resetada. Tente conectar novamente.')
+                    window.location.reload()
+                  }}
+                  className="w-full py-2 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/40 text-sm font-medium"
+                >
+                  Resetar e conectar
+                </button>
+              )}
             </div>
           )}
         </div>

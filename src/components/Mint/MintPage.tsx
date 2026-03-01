@@ -70,7 +70,7 @@ function MintPage() {
         const found: number[] = [];
         let index = 1;
 
-        async function worker() {
+        const worker = async () => {
           while (index <= maxScan) {
             const current = index++;
             try {
@@ -88,7 +88,7 @@ function MintPage() {
               // token does not exist → ignore
             }
           }
-        }
+        };
 
         await Promise.all(
           Array.from({ length: SCAN_CONCURRENCY }).map(worker)

@@ -8,7 +8,7 @@ interface HeroProps {
   onNavigateToMint?: () => void
 }
 
-export function Hero({}: HeroProps) {
+export function Hero({ onNavigateToMint: _onNavigateToMint }: HeroProps = {}) {
 
   return (
     <div className="relative overflow-hidden">

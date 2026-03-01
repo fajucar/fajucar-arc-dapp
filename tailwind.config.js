@@ -6,6 +6,15 @@ export default {
   ],
   theme: {
     extend: {
+      transitionDuration: {
+        150: '150ms',
+        200: '200ms',
+        250: '250ms',
+      },
+      transitionTimingFunction: {
+        'out-smooth': 'cubic-bezier(0, 0, 0.2, 1)',
+        'in-smooth': 'cubic-bezier(0.4, 0, 1, 1)',
+      },
       colors: {
         primary: {
           50: '#f0f9ff',

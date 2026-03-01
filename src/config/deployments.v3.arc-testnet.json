@@ -1,0 +1,20 @@
+{
+  "chainId": 5042002,
+  "v3Factory": "0xBA83F76eada22488aD91Ded08AdC3082303D0354",
+  "v3SwapRouter": "0x9349B05b5f1e00A49EED8eCd1Da556Eb2f6260FC",
+  "v3PositionManager": "0xC61608f54EEFf2b229e3a4858236e47f2701a80f",
+  "v3Quoter": "",
+  "weth9": "0x392016cA446b46df8122D41C9968bb927E5c93b6",
+  "v3Pool_USDC_EURC_500": "0x6071124c5472ECD67418A05Dcefb1Ce5613f30fe",
+  "tokens": {
+    "USDC": {
+      "address": "0x3600000000000000000000000000000000000000",
+      "decimals": 6
+    },
+    "EURC": {
+      "address": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+      "decimals": 6
+    }
+  },
+  "v3Pool_USDC_FAJU_500": "0x5b763c3eF541F8625f736718e2249a5df4704c83"
+}

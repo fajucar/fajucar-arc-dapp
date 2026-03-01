@@ -12,6 +12,11 @@ interface ImportMetaEnv {
   readonly VITE_DEX_ROUTER_ADDRESS?: string
   readonly VITE_DEX_FACTORY_ADDRESS?: string
   readonly VITE_DEX_PAIR_ADDRESS?: string
+  readonly VITE_FAJU_FARM_ADDRESS?: string
+  readonly VITE_V3_FACTORY?: string
+  readonly VITE_V3_SWAP_ROUTER?: string
+  readonly VITE_V3_POSITION_MANAGER?: string
+  readonly VITE_V3_QUOTER?: string
 }
 
 interface ImportMeta {

@@ -409,6 +409,27 @@ export function PoolsPage() {
     return result > 0 ? result.toFixed(6) : ''
   }
 
+  /** Proportional add for existing pool modal (amount0 ↔ token0, amount1 ↔ token1) */
+  const computePoolAmount1From0 = (pool: PoolMarketInfo, amount0: string): string => {
+    const r0 = parseFloat(pool.reserve0Formatted)
+    const r1 = parseFloat(pool.reserve1Formatted)
+    if (!(r0 > 0) || !(r1 > 0)) return ''
+    const v = parseFloat(amount0)
+    if (Number.isNaN(v) || v <= 0) return ''
+    const out = v * (r1 / r0)
+    return out > 0 ? out.toFixed(6) : ''
+  }
+
+  const computePoolAmount0From1 = (pool: PoolMarketInfo, amount1: string): string => {
+    const r0 = parseFloat(pool.reserve0Formatted)
+    const r1 = parseFloat(pool.reserve1Formatted)
+    if (!(r0 > 0) || !(r1 > 0)) return ''
+    const v = parseFloat(amount1)
+    if (Number.isNaN(v) || v <= 0) return ''
+    const out = v * (r0 / r1)
+    return out > 0 ? out.toFixed(6) : ''
+  }
+
   useEffect(() => {
     if (!genericAddOpen || !address || !publicClient) {
       setBalanceA(null)
@@ -593,14 +614,27 @@ export function PoolsPage() {
                         <input
                           type="number"
                           value={amount0}
-                          onChange={(e) => setAmount0(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setAmount0(val)
+                            if (!addModalPool) return
+                            if (val.trim() === '') {
+                              setAmount1('')
+                              return
+                            }
+                            setAmount1(computePoolAmount1From0(addModalPool, val))
+                          }}
                           placeholder="0.0"
                           className="flex-1 bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
                         />
                         {poolModalBalance0 != null && parseFloat(poolModalBalance0) > 0 && (
                           <button
                             type="button"
-                            onClick={() => setAmount0(poolModalBalance0)}
+                            onClick={() => {
+                              const m = poolModalBalance0
+                              setAmount0(m)
+                              if (addModalPool) setAmount1(computePoolAmount1From0(addModalPool, m))
+                            }}
                             className="text-xs font-medium text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-slate-700/60 transition-colors"
                           >
                             Max
@@ -621,14 +655,27 @@ export function PoolsPage() {
                         <input
                           type="number"
                           value={amount1}
-                          onChange={(e) => setAmount1(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setAmount1(val)
+                            if (!addModalPool) return
+                            if (val.trim() === '') {
+                              setAmount0('')
+                              return
+                            }
+                            setAmount0(computePoolAmount0From1(addModalPool, val))
+                          }}
                           placeholder="0.0"
                           className="flex-1 bg-slate-800/60 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
                         />
                         {poolModalBalance1 != null && parseFloat(poolModalBalance1) > 0 && (
                           <button
                             type="button"
-                            onClick={() => setAmount1(poolModalBalance1)}
+                            onClick={() => {
+                              const m = poolModalBalance1
+                              setAmount1(m)
+                              if (addModalPool) setAmount0(computePoolAmount0From1(addModalPool, m))
+                            }}
                             className="text-xs font-medium text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-slate-700/60 transition-colors"
                           >
                             Max

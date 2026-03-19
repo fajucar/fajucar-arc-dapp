@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Menu, X, Image, Sparkles, ArrowLeftRight, Waves, Home, Wallet } from 'lucide-react'
+import { useState, type ComponentType } from 'react'
+import { Menu, X, Image, Sparkles, ArrowLeftRight, Waves, Home, Wallet, Bot } from 'lucide-react'
 import { NavLink, Link } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@/components/Web3/ConnectButton'
@@ -11,20 +11,42 @@ const navItems = [
   { to: '/my-nfts', icon: Image, label: 'My NFTs' },
   { to: '/swap', icon: ArrowLeftRight, label: 'Swap' },
   { to: '/pools', icon: Waves, label: 'Pools' },
+  { to: '/agents', icon: Bot, label: 'Agents' },
   { to: '/my-pools', icon: Wallet, label: 'My Pools' },
 ] as const
 
-function NavItem({ to, icon: Icon, label }: { to: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
+const desktopNavBaseClass =
+  'flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-200 ease-out'
+
+const desktopNavInactiveClass =
+  'text-slate-400 hover:bg-slate-800/45 hover:text-slate-100 hover:shadow-sm hover:shadow-slate-950/30'
+
+const desktopNavActiveClass =
+  'border border-fuchsia-500/30 bg-gradient-to-r from-fuchsia-500/12 via-purple-500/10 to-blue-500/12 text-fuchsia-100 shadow-[0_0_18px_rgba(217,70,239,0.14)] backdrop-blur-sm hover:brightness-110'
+
+const mobileNavBaseClass =
+  'flex items-center gap-2 rounded-full px-4 py-3 text-sm font-medium transition-all duration-200 ease-out'
+
+const mobileNavInactiveClass =
+  'text-slate-300 hover:bg-slate-800/50 hover:text-white hover:shadow-sm hover:shadow-slate-950/30'
+
+const mobileNavActiveClass =
+  'border border-fuchsia-500/30 bg-gradient-to-r from-fuchsia-500/12 via-purple-500/10 to-blue-500/12 text-fuchsia-100 shadow-[0_0_18px_rgba(217,70,239,0.14)] backdrop-blur-sm hover:brightness-110'
+
+function getNavItemClass(isActive: boolean, variant: 'desktop' | 'mobile') {
+  if (variant === 'mobile') {
+    return `${mobileNavBaseClass} ${isActive ? mobileNavActiveClass : mobileNavInactiveClass}`
+  }
+
+  return `${desktopNavBaseClass} ${isActive ? desktopNavActiveClass : desktopNavInactiveClass}`
+}
+
+function NavItem({ to, icon: Icon, label }: { to: string; icon: ComponentType<{ className?: string }>; label: string }) {
   return (
     <NavLink
       to={to}
-      className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-        ${isActive
-          ? 'text-cyan-300 bg-cyan-500/10'
-          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-        }`
-      }
+      end={to === '/'}
+      className={({ isActive }) => getNavItemClass(isActive, 'desktop')}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span>{label}</span>
@@ -91,12 +113,9 @@ export function Header() {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  end={item.to === '/'}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                    ${isActive ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30' : 'text-slate-300 hover:bg-slate-800/50'}
-                    `
-                  }
+                  className={({ isActive }) => getNavItemClass(isActive, 'mobile')}
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>

@@ -2,24 +2,20 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAccount, useWalletClient, usePublicClient, useChainId } from 'wagmi';
 import { getAddress } from 'viem';
-import { decodeEventLog } from 'viem';
+import { useNavigate } from 'react-router-dom';
+import { Interface } from 'ethers';
 import { ARC_COLLECTION } from '../config/arcCollection';
 import { ARC_TESTNET, FAJUCAR_COLLECTION_ADDRESS } from '../config/contracts';
 import { CONSTANTS } from '../config/constants';
 import FajucarCollectionAbi from '../abis/FajucarCollection.json';
 import toast from 'react-hot-toast';
+import { addOptimisticUserNft, saveRecentMint } from '@/lib/recentMint';
 
 // FajucarCollection: mintById(modelId). modelId 1=Arc Explorer, 2=Arc Guardian, 3=Arc Builder.
 
-const TRANSFER_EVENT_ABI = {
-  type: 'event' as const,
-  name: 'Transfer' as const,
-  inputs: [
-    { name: 'from', type: 'address', indexed: true },
-    { name: 'to', type: 'address', indexed: true },
-    { name: 'tokenId', type: 'uint256', indexed: true },
-  ],
-};
+const transferInterface = new Interface([
+  'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)',
+])
 
 function isValidContractAddress(value: string | undefined): value is `0x${string}` {
   if (!value || typeof value !== 'string') return false;
@@ -38,16 +34,14 @@ function extractTokenIdFromReceipt(
   for (const log of receipt.logs) {
     if (log.address?.toLowerCase() !== nftLower) continue;
     try {
-      const decoded = decodeEventLog({
-        abi: [TRANSFER_EVENT_ABI],
+      const decoded = transferInterface.parseLog({
         data: log.data,
-        topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
-        strict: false,
+        topics: [...log.topics],
       });
-      if (decoded.eventName === 'Transfer' && decoded.args) {
-        const to = (decoded.args as { to?: string }).to;
+      if (decoded?.name === 'Transfer') {
+        const to = decoded.args?.to as string | undefined;
         if (to?.toLowerCase() === ownerLower) {
-          const tokenId = (decoded.args as { tokenId?: bigint }).tokenId;
+          const tokenId = decoded.args?.tokenId as bigint | undefined;
           if (tokenId !== undefined) return tokenId.toString();
         }
       }
@@ -62,25 +56,30 @@ type NFTCardProps = {
   item: typeof ARC_COLLECTION[0];
   index: number;
   onMint: (item: typeof ARC_COLLECTION[0]) => void;
-  minting: number | null;
+  mintingId: string | null;
   hasCollection: boolean;
   contractError: boolean;
 };
 
-function NFTCard({ item, index, onMint, minting, hasCollection, contractError }: NFTCardProps) {
-  const isDisabled = !hasCollection || contractError || minting === item.id || minting !== null;
+function NFTCard({ item, index, onMint, mintingId, hasCollection, contractError }: NFTCardProps) {
+  const isMintingThisCard = mintingId === String(item.id);
+  const isButtonDisabled = !hasCollection || contractError || isMintingThisCard;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut', delay: index * 0.08 }}
-      className="group relative rounded-2xl border border-slate-700/50 bg-slate-900/50 overflow-hidden
-        hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] 
-        transition-all duration-300 ease-in-out hover:-translate-y-2 hover:scale-[1.02]"
+      className={`group relative rounded-2xl border bg-slate-900/50 overflow-hidden
+        ${isMintingThisCard
+          ? 'border-cyan-400/60 shadow-[0_0_28px_rgba(34,211,238,0.18)] ring-1 ring-cyan-400/30'
+          : 'border-slate-700/50 hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)]'
+        }
+        transition-all duration-300 ease-in-out hover:-translate-y-2 hover:scale-[1.02]
+      `}
     >
       {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
+      <div className={`absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-transparent transition-opacity duration-300 pointer-events-none z-10 ${isMintingThisCard ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
 
       <div className="aspect-square bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center overflow-hidden relative">
         <img
@@ -104,19 +103,21 @@ function NFTCard({ item, index, onMint, minting, hasCollection, contractError }:
 
         <motion.button
           onClick={() => onMint(item)}
-          disabled={isDisabled}
-          whileHover={!isDisabled ? { scale: 1.02 } : {}}
-          whileTap={!isDisabled ? { scale: 0.98 } : {}}
+          disabled={isButtonDisabled}
+          whileHover={!isButtonDisabled ? { scale: 1.02 } : {}}
+          whileTap={!isButtonDisabled ? { scale: 0.98 } : {}}
           className={`relative w-full px-4 py-3 rounded-xl font-semibold overflow-hidden transition-all duration-300 group/btn
-            ${isDisabled
-              ? 'bg-slate-700/60 text-slate-500 cursor-not-allowed'
-            : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-400 hover:to-blue-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.35)]'
-            } ${isDisabled ? 'animate-pulse' : ''}`}
+            ${isMintingThisCard
+              ? 'bg-cyan-500/15 border border-cyan-400/40 text-cyan-100 cursor-wait opacity-90'
+              : !hasCollection || contractError
+                ? 'bg-slate-700/60 text-slate-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-400 hover:to-blue-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.35)]'
+            } ${isMintingThisCard ? 'animate-pulse' : ''}`}
         >
-          {!isDisabled && (
+          {!isButtonDisabled && (
             <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 pointer-events-none" />
           )}
-          {minting === item.id ? (
+          {isMintingThisCard ? (
             <span className="flex items-center justify-center gap-2">
               <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -134,11 +135,12 @@ function NFTCard({ item, index, onMint, minting, hasCollection, contractError }:
 }
 
 export function ArcCollectionGallery() {
+  const navigate = useNavigate();
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
   const chainId = useChainId();
-  const [minting, setMinting] = useState<number | null>(null);
+  const [mintingId, setMintingId] = useState<string | null>(null);
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
   const [lastContract, setLastContract] = useState<string | null>(null);
   const [lastType, setLastType] = useState<string | null>(null);
@@ -156,6 +158,11 @@ export function ArcCollectionGallery() {
     : 'Collection contract not configured in production.';
 
   const handleMint = async (item: typeof ARC_COLLECTION[0]) => {
+    if (mintingId !== null) {
+      toast.error('A mint is already in progress. Please wait for it to finish.');
+      return;
+    }
+
     if (!address || !isConnected) {
       toast.error('Please connect your wallet first');
       return;
@@ -186,7 +193,7 @@ export function ArcCollectionGallery() {
       return;
     }
 
-    setMinting(item.id);
+    setMintingId(String(item.id));
     setLastMintError(null);
     setLastTxStatus('pending');
     setLastMintTokenId(null);
@@ -213,7 +220,7 @@ export function ArcCollectionGallery() {
         } else if (simError instanceof Error) msg = simError.message;
         setLastMintError(msg);
         toast.error(msg, { id: 'minting', duration: 6000 });
-        setMinting(null);
+        setMintingId(null);
         return;
       }
 
@@ -232,7 +239,7 @@ export function ArcCollectionGallery() {
         const errMsg = 'Transaction reverted on-chain (e.g. MODEL_DISABLED or URI_NOT_SET).';
         setLastMintError(errMsg);
         toast.error(errMsg, { id: 'minting', duration: 5000 });
-        setMinting(null);
+        setMintingId(null);
         return;
       }
 
@@ -247,6 +254,24 @@ export function ArcCollectionGallery() {
       setLastType(item.name);
       setLastMintTokenId(tokenId);
       setLastTxStatus('success');
+      addOptimisticUserNft({
+        id: tokenId || `optimistic-${hash}`,
+        contractAddress: nftContractAddress,
+        ownerAddress: address,
+        txHash: hash,
+        name: item.name,
+        image: item.image,
+        tokenId,
+        timestamp: Date.now(),
+      });
+      saveRecentMint({
+        contractAddress: nftContractAddress,
+        nftName: item.name,
+        ownerAddress: address,
+        txHash: hash,
+        tokenId,
+        timestamp: Date.now(),
+      });
       toast.success(tokenId ? `Minted ${item.name}! Token #${tokenId}` : `Minted ${item.name}!`, { id: 'minting' });
     } catch (error: unknown) {
       setLastTxStatus('failed');
@@ -262,7 +287,7 @@ export function ArcCollectionGallery() {
       setLastMintError(message);
       toast.error(message, { id: 'minting', duration: 5000 });
     } finally {
-      setMinting(null);
+      setMintingId(null);
     }
   };
 
@@ -309,28 +334,43 @@ export function ArcCollectionGallery() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {ARC_COLLECTION.slice(0, 3).map((item, index) => (
-          <NFTCard key={item.id} item={item} index={index} onMint={handleMint} minting={minting} hasCollection={hasCollection} contractError={!!contractError} />
+          <NFTCard key={item.id} item={item} index={index} onMint={handleMint} mintingId={mintingId} hasCollection={hasCollection} contractError={!!contractError} />
         ))}
       </div>
 
       {lastTxHash && lastTxStatus === 'success' && (
         <div className="mt-6 rounded-xl border border-cyan-500/30 bg-slate-800/50 p-4">
           <p className="text-slate-300 text-sm mb-2">
-            Mint submitted: <span className="font-mono text-cyan-300">{lastType ?? 'NFT'}</span> — {lastTxHash.slice(0, 6)}...{lastTxHash.slice(-4)}
+            Minted NFT: <span className="font-mono text-cyan-300">{lastType ?? 'NFT'}</span>
+          </p>
+          <p className="text-slate-300 text-sm mb-2">
+            Tx hash: <span className="font-mono text-cyan-300">{lastTxHash.slice(0, 6)}...{lastTxHash.slice(-4)}</span>
           </p>
           {lastMintTokenId && (
             <p className="text-slate-300 text-sm mb-2">
               Token ID: <span className="font-mono text-cyan-300">#{lastMintTokenId}</span>
             </p>
           )}
-          <a
-            href={`${CONSTANTS.LINKS.explorer}/tx/${lastTxHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
-          >
-            View on Explorer
-          </a>
+          <p className="text-slate-400 text-sm mb-4">
+            Finalizing on-chain confirmation...
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(`/my-nfts${lastMintTokenId ? `?highlight=${lastMintTokenId}` : ''}`)}
+              className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-400"
+            >
+              View My NFTs
+            </button>
+            <a
+              href={`${CONSTANTS.LINKS.explorer}/tx/${lastTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
+            >
+              View on Explorer
+            </a>
+          </div>
           {lastContract && (
             <p className="text-slate-500 text-xs mt-2">
               NFT Contract: {lastContract.slice(0, 6)}...{lastContract.slice(-4)}

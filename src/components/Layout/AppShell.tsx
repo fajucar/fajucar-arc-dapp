@@ -8,7 +8,7 @@ interface AppShellProps {
   titleClassName?: string
   children: ReactNode
   className?: string
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '6xl' | 'full'
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '6xl' | '7xl' | '8xl' | 'full'
   /** Reduced padding for compact layouts (e.g. Swap page) */
   compact?: boolean
 }
@@ -20,6 +20,8 @@ const maxWidthClasses = {
   xl: 'max-w-xl',
   '2xl': 'max-w-2xl',
   '6xl': 'max-w-6xl',
+  '7xl': 'max-w-7xl',
+  '8xl': 'max-w-[96rem]',
   full: 'max-w-full',
 }
 
@@ -33,10 +35,10 @@ export function AppShell({
   compact = false,
 }: AppShellProps) {
   return (
-    <main className={cn('mx-auto w-full py-8 px-4', maxWidthClasses[maxWidth])}>
+    <main className={cn('mx-auto w-full px-3 py-6 sm:px-4 xl:px-5 2xl:px-6', maxWidthClasses[maxWidth])}>
       <div className={cn(
         'bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-3xl shadow-[0_8px_32px_rgba(6,182,212,0.1)]',
-        compact ? 'p-4 md:p-5' : 'p-6 md:p-8'
+        compact ? 'p-3.5 sm:p-4 xl:p-5' : 'p-6 md:p-8'
       )}>
         {title && (
           <div className={cn(compact ? 'mb-4' : 'mb-6')}>

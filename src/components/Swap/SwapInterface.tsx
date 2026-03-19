@@ -50,6 +50,7 @@ const ARC_TESTNET_CHAIN_ID = CONSTANTS.ARC_TESTNET_CHAIN_ID
 const SLIPPAGE_DEFAULT = 1
 const DEX_ROUTER_ADDRESS = ARCDEX.router
 const CONFIG_FACTORY = ARCDEX.factory
+const AGENTS_SWAP_PREFILL_KEY = 'fajuarc:agents:swap-prefill'
 
 function safeParseUnits(value: string, decimals: number): bigint | null {
   try {
@@ -406,6 +407,30 @@ export function SwapInterface() {
 
   const { writeContractAsync: writeContract, data: hash, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(AGENTS_SWAP_PREFILL_KEY)
+      if (!raw) return
+
+      const parsed = JSON.parse(raw) as {
+        tokenInAddress?: string
+        tokenOutAddress?: string
+        amountIn?: string
+      }
+
+      const nextTokenFrom = TOKENS.find((token) => token.address.toLowerCase() === parsed.tokenInAddress?.toLowerCase())
+      const nextTokenTo = TOKENS.find((token) => token.address.toLowerCase() === parsed.tokenOutAddress?.toLowerCase())
+
+      if (nextTokenFrom) setTokenFrom(nextTokenFrom)
+      if (nextTokenTo) setTokenTo(nextTokenTo)
+      if (typeof parsed.amountIn === 'string') setAmountFrom(parsed.amountIn)
+
+      window.sessionStorage.removeItem(AGENTS_SWAP_PREFILL_KEY)
+    } catch {
+      // Ignore malformed storage values.
+    }
+  }, [])
 
   // Allowance USDC → Router (para seção "Test Approve USDC" e exibição em tempo real)
   // Allowance do token From para o Router (reactivo; refetch após approve)
